@@ -1,0 +1,29 @@
+{
+  "name": "clash-config-manager",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "dev:admin": "vite --config admin/vite.config.ts",
+    "build": "vite build --config admin/vite.config.ts",
+    "deploy": "wrangler deploy",
+    "preview": "vite preview --config admin/vite.config.ts"
+  },
+  "dependencies": {
+    "@codemirror/lang-yaml": "^6.1.1",
+    "@codemirror/state": "^6.6.0",
+    "@codemirror/theme-one-dark": "^6.1.2",
+    "@codemirror/view": "^6.41.1",
+    "codemirror": "^6.0.1",
+    "diff": "^5.2.0",
+    "hono": "^4.7.0",
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250427.0",
+    "@types/diff": "^5.2.1",
+    "typescript": "^5.8.0",
+    "vite": "^5.2.8",
+    "wrangler": "^4.14.0"
+  }
+}
