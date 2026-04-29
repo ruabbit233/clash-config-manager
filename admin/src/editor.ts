@@ -6,16 +6,21 @@ import { yaml } from '@codemirror/lang-yaml';
 import { oneDark } from '@codemirror/theme-one-dark';
 import * as yamlParser from 'yaml';
 import { showToast } from './toast';
+import { t } from './i18n';
+import { showConfirm, showPrompt } from './modal';
+import { iconSave, iconRefresh, iconDownload, iconCheck, iconAlert } from './icons';
 
 export function renderEditor(container: HTMLElement, api: ApiClient, onSaved?: () => void): void {
   container.innerHTML = `
-    <div class="editor-toolbar">
-      <button id="editor-save">Save</button>
-      <button id="editor-reset" class="btn-secondary">Reset</button>
-      <button id="editor-download" class="btn-secondary">Download</button>
-      <span id="editor-status"></span>
+    <div class="editor-page">
+      <div class="editor-toolbar">
+        <button id="editor-save" class="btn btn-primary">${iconSave} ${t.editor.save}</button>
+        <button id="editor-reset" class="btn btn-secondary">${iconRefresh} ${t.editor.reset}</button>
+        <button id="editor-download" class="btn btn-secondary">${iconDownload} ${t.editor.download}</button>
+        <span id="editor-status" class="editor-status"></span>
+      </div>
+      <div id="editor-wrapper"></div>
     </div>
-    <div id="editor-wrapper"></div>
   `;
 
   const wrapper = document.getElementById('editor-wrapper') as HTMLElement;
@@ -36,12 +41,10 @@ export function renderEditor(container: HTMLElement, api: ApiClient, onSaved?: (
         localStorage.setItem('clash_admin_draft', doc);
         try {
           yamlParser.parse(doc);
-          statusSpan.textContent = 'Valid YAML';
-          statusSpan.style.color = 'var(--success)';
+          statusSpan.innerHTML = `<span class="status-dot valid"></span> ${iconCheck} ${t.editor.validYaml}`;
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : String(e);
-          statusSpan.textContent = 'Invalid YAML: ' + msg;
-          statusSpan.style.color = 'var(--error)';
+          statusSpan.innerHTML = `<span class="status-dot invalid"></span> ${iconAlert} ${t.editor.invalidYaml}: ${msg}`;
         }
       }
     });
@@ -61,7 +64,7 @@ export function renderEditor(container: HTMLElement, api: ApiClient, onSaved?: (
       originalContent = config.content;
       const draft = localStorage.getItem('clash_admin_draft');
       if (draft && draft !== originalContent) {
-        if (confirm('Found unsaved draft. Restore it?')) {
+        if (await showConfirm(t.editor.draftRestore)) {
           initEditor(draft);
           return;
         } else {
@@ -80,15 +83,17 @@ export function renderEditor(container: HTMLElement, api: ApiClient, onSaved?: (
     try {
       yamlParser.parse(doc);
     } catch (e: unknown) {
-      if (!confirm('YAML is invalid. Save anyway?')) return;
+      if (!(await showConfirm(t.editor.invalidSaveConfirm))) return;
     }
-    const msg = prompt('Enter version message (optional):') || undefined;
+    const msg = await showPrompt(t.editor.versionMessagePrompt, '', t.editor.versionMessageLabel);
+    const versionMsg = msg || undefined;
+    
     saveBtn.disabled = true;
     try {
-      await api.saveConfig(doc, msg);
+      await api.saveConfig(doc, versionMsg);
       localStorage.removeItem('clash_admin_draft');
       originalContent = doc;
-      showToast('Config saved', 'success');
+      showToast(t.editor.configSaved, 'success');
       if (onSaved) onSaved();
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : String(e), 'error');
@@ -97,10 +102,10 @@ export function renderEditor(container: HTMLElement, api: ApiClient, onSaved?: (
     }
   });
 
-  resetBtn.addEventListener('click', () => {
-    if (confirm('Discard changes and reload?')) {
+  resetBtn.addEventListener('click', async () => {
+    if (await showConfirm(t.editor.discardConfirm)) {
       localStorage.removeItem('clash_admin_draft');
-      loadConfig();
+      await loadConfig();
     }
   });
 

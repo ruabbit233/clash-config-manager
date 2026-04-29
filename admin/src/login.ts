@@ -1,14 +1,22 @@
 import { ApiClient } from './api';
 import { setToken, setExpiresAt } from './auth';
+import { t } from './i18n';
+import { iconShield } from './icons';
 
 export function renderLogin(container: HTMLElement, api: ApiClient): void {
   container.innerHTML = `
-    <div class="login-container">
-      <div class="login-box">
-        <h2 class="app-title">Login</h2>
-        <input type="password" id="login-password" placeholder="Password" />
-        <button id="login-btn">Submit</button>
-        <div id="login-error" style="color: var(--error); display: none;"></div>
+    <div class="login-page">
+      <div class="login-card">
+        <div class="login-brand">
+          <div class="login-brand-icon">${iconShield}</div>
+          <h1 class="login-brand-title">${t.login.title}</h1>
+          <p class="login-brand-subtitle">${t.login.subtitle}</p>
+        </div>
+        <div class="login-form">
+          <input type="password" id="login-password" class="login-input" placeholder="${t.login.passwordPlaceholder}" />
+          <button id="login-btn" class="login-btn">${t.login.submit}</button>
+        </div>
+        <div id="login-error" class="login-error"></div>
       </div>
     </div>
   `;
@@ -20,18 +28,18 @@ export function renderLogin(container: HTMLElement, api: ApiClient): void {
   btn.addEventListener('click', async () => {
     try {
       btn.disabled = true;
-      btn.textContent = 'Loading...';
+      btn.textContent = t.login.loading;
       err.style.display = 'none';
       const { token, expiresAt } = await api.login(input.value);
       setToken(token);
       setExpiresAt(expiresAt);
       window.location.hash = '#/editor';
-    } catch (e: any) {
-      err.textContent = e.message;
+    } catch (e: unknown) {
+      err.textContent = e instanceof Error ? e.message : String(e);
       err.style.display = 'block';
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Submit';
+      btn.textContent = t.login.submit;
     }
   });
   

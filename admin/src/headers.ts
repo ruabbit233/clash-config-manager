@@ -1,14 +1,18 @@
 import { ApiClient, HeadersConfig } from './api';
 import { showToast } from './toast';
+import { t } from './i18n';
+import { iconSave, iconRefresh, iconPlus, iconTrash } from './icons';
 
 export function renderHeaders(container: HTMLElement, api: ApiClient): void {
   container.innerHTML = `
-    <div style="margin-bottom: 1rem;">
-      <button id="headers-save">Save</button>
-      <button id="headers-reset" class="btn-secondary">Reset</button>
-      <button id="headers-add" class="btn-secondary">+</button>
+    <div class="headers-page">
+      <div class="headers-toolbar">
+        <button id="headers-save" class="btn btn-primary">${iconSave} ${t.headers.save}</button>
+        <button id="headers-reset" class="btn btn-secondary">${iconRefresh} ${t.headers.reset}</button>
+        <button id="headers-add" class="btn btn-secondary">${iconPlus} ${t.headers.add}</button>
+      </div>
+      <div class="headers-card" id="headers-list"></div>
     </div>
-    <div id="headers-list"></div>
   `;
 
   const list = document.getElementById('headers-list') as HTMLElement;
@@ -20,10 +24,10 @@ export function renderHeaders(container: HTMLElement, api: ApiClient): void {
     const row = document.createElement('div');
     row.className = 'header-row';
     row.innerHTML = `
-      <input type="text" value="${key}" placeholder="Header-Name" class="h-key" />
-      <input type="text" value="${val}" placeholder="Value" class="h-val" style="flex: 1;" />
-      <button class="btn-danger h-del">×</button>
-      <span class="h-err" style="color: var(--error); font-size: 0.8rem; display: none;">Invalid format</span>
+      <input type="text" value="${key}" placeholder="${t.headers.keyPlaceholder}" class="h-key" />
+      <input type="text" value="${val}" placeholder="${t.headers.valuePlaceholder}" class="h-val" />
+      <button class="h-del">${iconTrash}</button>
+      <span class="h-err">${t.headers.invalidFormat}</span>
     `;
     
     const keyInput = row.querySelector('.h-key') as HTMLInputElement;
@@ -73,14 +77,14 @@ export function renderHeaders(container: HTMLElement, api: ApiClient): void {
     });
 
     if (hasError) {
-      showToast('Please fix invalid header names', 'error');
+      showToast(t.headers.fixInvalid, 'error');
       return;
     }
 
     try {
       saveBtn.disabled = true;
       await api.setHeaders(config);
-      showToast('Headers saved successfully', 'success');
+      showToast(t.headers.saved, 'success');
     } catch(e: unknown) {
       showToast(e instanceof Error ? e.message : String(e), 'error');
     } finally {

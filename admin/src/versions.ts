@@ -1,30 +1,46 @@
 import { ApiClient } from './api';
 import { showToast } from './toast';
 import * as Diff from 'diff';
+import { t } from './i18n';
+import { showConfirm } from './modal';
+import { iconCompare } from './icons';
 
 export function renderVersions(container: HTMLElement, api: ApiClient): void {
   container.innerHTML = `
-    <div>
-      <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
-        <select id="diff-from"></select>
-        <select id="diff-to"></select>
-        <button id="diff-btn">Compare</button>
+    <div class="versions-page">
+      <div class="diff-section">
+        <div class="diff-selects">
+          <select id="diff-from" class="diff-select">
+            <option value="" disabled selected>${t.versions.selectFrom}</option>
+          </select>
+          <select id="diff-to" class="diff-select">
+            <option value="" disabled selected>${t.versions.selectTo}</option>
+          </select>
+          <button id="diff-btn" class="btn btn-primary">
+            ${iconCompare}
+            ${t.versions.compare}
+          </button>
+        </div>
+        <div id="diff-output" class="diff-view" hidden></div>
       </div>
-      <div id="diff-output" class="diff-view" style="display: none; white-space: pre-wrap; font-family: monospace;"></div>
 
-      <table class="versions-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Message</th>
-            <th>Hash</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="versions-tbody"></tbody>
-      </table>
-      <div style="margin-top: 1rem;">
-        <button id="load-more-btn" style="display: none;">Load More</button>
+      <div class="versions-section">
+        <div class="card">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>${t.versions.date}</th>
+                <th>${t.versions.message}</th>
+                <th>${t.versions.hash}</th>
+                <th>${t.versions.actions}</th>
+              </tr>
+            </thead>
+            <tbody id="versions-tbody"></tbody>
+          </table>
+        </div>
+        <div class="load-more-wrapper">
+          <button id="load-more-btn" class="btn btn-secondary" hidden>${t.versions.loadMore}</button>
+        </div>
       </div>
     </div>
   `;
@@ -42,37 +58,38 @@ export function renderVersions(container: HTMLElement, api: ApiClient): void {
     if (reset) {
       tbody.innerHTML = '';
       currentCursor = undefined;
-      fromSel.innerHTML = '';
-      toSel.innerHTML = '';
+      fromSel.innerHTML = `<option value="" disabled selected>${t.versions.selectFrom}</option>`;
+      toSel.innerHTML = `<option value="" disabled selected>${t.versions.selectTo}</option>`;
     }
     loadMoreBtn.disabled = true;
     try {
       const res = await api.listVersions(10, currentCursor);
       res.keys.forEach(v => {
         const tr = document.createElement('tr');
-        const date = new Date(v.createdAt).toLocaleString();
+        const date = new Date(v.createdAt).toLocaleString('zh-CN');
+        const shortHash = v.contentHash.substring(0, 8);
         tr.innerHTML = `
           <td>${date}</td>
           <td>${v.message || '-'}</td>
-          <td>${v.contentHash.substring(0, 8)}</td>
-          <td><button class="btn-secondary btn-sm rollback-btn" data-id="${v.id}">Rollback</button></td>
+          <td><span class="mono">${shortHash}</span></td>
+          <td><button class="btn btn-secondary btn-sm rollback-btn" data-id="${v.id}">${t.versions.rollback}</button></td>
         `;
         tbody.appendChild(tr);
 
         [fromSel, toSel].forEach(sel => {
           const opt = document.createElement('option');
           opt.value = v.id;
-          opt.textContent = `${date} - ${v.contentHash.substring(0, 8)}`;
+          opt.textContent = `${date} - ${shortHash}`;
           sel.appendChild(opt.cloneNode(true));
         });
 
         const btn = tr.querySelector('.rollback-btn') as HTMLButtonElement;
         btn.addEventListener('click', async () => {
           const id = btn.getAttribute('data-id')!;
-          if (confirm(`Rollback to version ${id.substring(0, 8)}?`)) {
+          if (await showConfirm(t.versions.rollbackConfirm(id.substring(0, 8)))) {
             try {
               await api.rollbackVersion(id);
-              showToast('Rolled back successfully', 'success');
+              showToast(t.versions.rollbackSuccess, 'success');
               loadVersions(true);
             } catch (err: unknown) {
               showToast(err instanceof Error ? err.message : String(err), 'error');
@@ -82,7 +99,7 @@ export function renderVersions(container: HTMLElement, api: ApiClient): void {
       });
 
       currentCursor = res.cursor;
-      loadMoreBtn.style.display = currentCursor ? 'inline-block' : 'none';
+      loadMoreBtn.hidden = !currentCursor;
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : String(e), 'error');
     } finally {
@@ -98,8 +115,8 @@ export function renderVersions(container: HTMLElement, api: ApiClient): void {
     if (!fromId || !toId) return;
 
     diffBtn.disabled = true;
-    diffOutput.style.display = 'block';
-    diffOutput.textContent = 'Loading...';
+    diffOutput.hidden = false;
+    diffOutput.innerHTML = `<div class="spinner"></div> ${t.versions.loading}`;
     try {
       const [fromSnap, toSnap] = await Promise.all([
         api.getVersion(fromId),
@@ -117,7 +134,7 @@ export function renderVersions(container: HTMLElement, api: ApiClient): void {
         diffOutput.appendChild(span);
       });
     } catch (e: unknown) {
-      diffOutput.textContent = `Error: ${e instanceof Error ? e.message : String(e)}`;
+      diffOutput.textContent = `${t.versions.error}${e instanceof Error ? e.message : String(e)}`;
     } finally {
       diffBtn.disabled = false;
     }
