@@ -29,7 +29,7 @@ export function setExpiresAt(expiresAt: string): void {
   localStorage.setItem('clash_admin_expires', expiresAt);
 }
 
-export function handleAuthError(_error: AuthError): void {
+export function handleAuthError(): void {
   clearToken();
   localStorage.removeItem('clash_admin_expires');
   window.location.hash = '#/login';

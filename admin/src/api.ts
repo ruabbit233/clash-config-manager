@@ -1,4 +1,4 @@
-import { AuthError } from './auth';
+import { AuthError, handleAuthError } from './auth';
 
 export interface LoginResponse { token: string; expiresAt: string; }
 export interface ConfigResponse { content: string; versionId: string; updatedAt: string; }
@@ -31,6 +31,7 @@ export class ApiClient {
     
     if (!res.ok) {
       if (res.status === 401) {
+        handleAuthError();
         throw new AuthError();
       }
       const errText = await res.text();
