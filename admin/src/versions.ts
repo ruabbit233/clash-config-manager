@@ -53,18 +53,25 @@ export function renderVersions(container: HTMLElement, api: ApiClient): void {
   const diffOutput = document.getElementById('diff-output') as HTMLElement;
 
   let currentCursor: string | undefined;
+  const pageSize = 10;
+  const loadedIds = new Set<string>();
 
   const loadVersions = async (reset = false) => {
     if (reset) {
       tbody.innerHTML = '';
       currentCursor = undefined;
+      loadedIds.clear();
+      loadMoreBtn.hidden = true;
       fromSel.innerHTML = `<option value="" disabled selected>${t.versions.selectFrom}</option>`;
       toSel.innerHTML = `<option value="" disabled selected>${t.versions.selectTo}</option>`;
     }
+    if (!reset && !currentCursor) return;
     loadMoreBtn.disabled = true;
     try {
-      const res = await api.listVersions(10, currentCursor);
+      const res = await api.listVersions(pageSize, currentCursor);
       res.keys.forEach(v => {
+        if (loadedIds.has(v.id)) return;
+        loadedIds.add(v.id);
         const tr = document.createElement('tr');
         const date = new Date(v.createdAt).toLocaleString('zh-CN');
         const shortHash = v.contentHash.substring(0, 8);
@@ -98,7 +105,9 @@ export function renderVersions(container: HTMLElement, api: ApiClient): void {
         });
       });
 
-      currentCursor = res.cursor;
+      const nextCursor = res.cursor;
+      const cursorAdvanced = Boolean(nextCursor) && nextCursor !== currentCursor;
+      currentCursor = cursorAdvanced ? nextCursor : undefined;
       loadMoreBtn.hidden = !currentCursor;
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : String(e), 'error');
