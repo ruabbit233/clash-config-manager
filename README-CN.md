@@ -1,4 +1,4 @@
-# Clash 配置管理器
+# Clash Config Manager
 
 基于 Cloudflare Workers 的 Clash YAML 配置文件管理系统，附带 Web 后台管理面板。
 

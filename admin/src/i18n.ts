@@ -1,6 +1,6 @@
 export const t = {
   app: {
-    title: 'Clash 配置管理器',
+    title: 'Clash Config Manager',
     logout: '退出登录',
   },
   nav: {
@@ -10,7 +10,7 @@ export const t = {
   },
   login: {
     title: '登录',
-    subtitle: 'Clash 配置管理器',
+    subtitle: 'Clash Config Manager',
     passwordPlaceholder: '请输入密码',
     submit: '登录',
     loading: '登录中...',
