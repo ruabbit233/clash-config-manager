@@ -75,7 +75,13 @@ export const saveVersion = async (
   };
 
   await kv.put(`${VERSION_PREFIX}${id}`, JSON.stringify(snapshot));
-  await kv.put(CURRENT_KEY, JSON.stringify(pointer));
+
+  try {
+    await kv.put(CURRENT_KEY, JSON.stringify(pointer));
+  } catch (error) {
+    await kv.delete(`${VERSION_PREFIX}${id}`);
+    throw error;
+  }
 
   return snapshot;
 };

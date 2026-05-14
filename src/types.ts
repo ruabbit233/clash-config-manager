@@ -37,10 +37,6 @@ export interface VersionListItem {
 export const AUTH_CONFIG = {
   /** JWT token expiry in seconds (default: 7 days) */
   TOKEN_EXPIRY_SECONDS: 604_800,
-  /** Max login attempts per IP within the rate limit window */
-  RATE_LIMIT_MAX_ATTEMPTS: 10,
-  /** Rate limit window in seconds */
-  RATE_LIMIT_WINDOW_SECONDS: 60,
   /** Cookie name for httpOnly auth token */
   COOKIE_NAME: "clash_admin_token",
   /** Cookie name for token expiry */
@@ -50,6 +46,8 @@ export const AUTH_CONFIG = {
 export const STORAGE_CONFIG = {
   /** Default pagination limit for version listing */
   DEFAULT_PAGE_LIMIT: 20,
+  /** Maximum pagination limit for version listing */
+  MAX_PAGE_LIMIT: 100,
   /** KV key prefix for version snapshots */
   VERSION_PREFIX: "version:",
   /** KV key for current config pointer */

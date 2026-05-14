@@ -2,7 +2,6 @@ import { Hono } from "hono";
 import type { Context, Next } from "hono";
 import { parseDocument } from "yaml";
 import { generateToken, verifyToken } from "./auth";
-import { checkRateLimit } from "./rate-limit";
 import {
   getCurrent,
   getHeaders,
@@ -128,28 +127,6 @@ const setAuthCookies = (
 };
 
 app.post("/api/auth/login", async (c) => {
-  const ip = c.req.header("CF-Connecting-IP") ?? c.req.header("X-Real-IP") ?? "unknown";
-  const rateLimit = checkRateLimit(
-    ip,
-    AUTH_CONFIG.RATE_LIMIT_MAX_ATTEMPTS,
-    AUTH_CONFIG.RATE_LIMIT_WINDOW_SECONDS,
-  );
-
-  c.header("X-RateLimit-Remaining", String(rateLimit.remaining));
-  c.header("X-RateLimit-Reset", String(Math.ceil(rateLimit.resetAt / 1000)));
-
-  if (!rateLimit.allowed) {
-    return c.json(
-      { error: "Too many login attempts. Please try again later." },
-      429,
-      {
-        "Retry-After": String(
-          Math.ceil((rateLimit.resetAt - Date.now()) / 1000),
-        ),
-      },
-    );
-  }
-
   const body = await safeParseJson<{ password?: string }>(c);
   if (!body || typeof body.password !== "string") {
     return c.json({ error: "Invalid request body" }, 400);
@@ -253,7 +230,9 @@ app.get("/api/versions", async (c) => {
   const limitParam = c.req.query("limit");
   const cursor = c.req.query("cursor");
   const parsed = limitParam ? Number.parseInt(limitParam, 10) : Number.NaN;
-  const limit = Number.isNaN(parsed) ? STORAGE_CONFIG.DEFAULT_PAGE_LIMIT : Math.max(parsed, 1);
+  const limit = Number.isNaN(parsed)
+    ? STORAGE_CONFIG.DEFAULT_PAGE_LIMIT
+    : Math.min(Math.max(parsed, 1), STORAGE_CONFIG.MAX_PAGE_LIMIT);
 
   const versions = await listVersions(c.env.KV, limit, cursor);
   return c.json(versions);
