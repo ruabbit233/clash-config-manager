@@ -4,6 +4,8 @@ export const t = {
     logout: '退出登录',
     openMenu: '打开菜单',
     closeMenu: '关闭菜单',
+    logoutConfirm: '确定退出登录？',
+    unsavedLeave: '有未保存的更改，确定离开？',
   },
   nav: {
     editor: '编辑器',
@@ -40,11 +42,15 @@ export const t = {
     hash: '哈希',
     actions: '操作',
     rollback: '回滚',
+    editMessage: '编辑备注',
     loadMore: '加载更多',
     loading: '加载中...',
     error: '错误：',
     rollbackConfirm: (id: string) => `确定回滚到版本 ${id}？`,
     rollbackSuccess: '回滚成功',
+    editMessagePrompt: '请输入新的版本备注：',
+    editMessageLabel: '版本备注',
+    editMessageSuccess: '版本备注已更新',
     selectFrom: '选择旧版本',
     selectTo: '选择新版本',
   },
@@ -58,6 +64,8 @@ export const t = {
     fixInvalid: '请修正无效的响应头名称',
     saved: '响应头已保存',
     deleteRow: '删除响应头',
+    deleteRowConfirm: '确定删除此响应头？',
+    resetConfirm: '确定重置所有响应头？未保存的更改将丢失。',
   },
   modal: {
     confirm: '确认',
@@ -68,4 +76,4 @@ export const t = {
   auth: {
     failed: '认证失败',
   },
-} as const;
+} as const

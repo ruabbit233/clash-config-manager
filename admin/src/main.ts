@@ -1,16 +1,17 @@
-import './style.css';
-import { ApiClient } from './api';
-import { getToken, isAuthenticated, clearToken } from './auth';
-import { renderLogin } from './login';
-import { renderEditor } from './editor';
-import { renderVersions } from './versions';
-import { renderHeaders } from './headers';
-import { t } from './i18n';
-import { iconShield, iconCode, iconClock, iconList, iconLogout, iconMenu } from './icons';
-import { getElementById } from './dom';
+import './style.css'
+import { ApiClient } from './api'
+import { getToken, isAuthenticated, clearToken } from './auth'
+import { renderLogin } from './login'
+import { renderEditor, isEditorDirty } from './editor'
+import { renderVersions } from './versions'
+import { renderHeaders, isHeadersDirty } from './headers'
+import { t } from './i18n'
+import { showConfirm } from './modal'
+import { iconShield, iconCode, iconClock, iconList, iconLogout, iconMenu } from './icons'
+import { getElementById } from './dom'
 
-const app = getElementById<HTMLDivElement>('app');
-const api = new ApiClient('', getToken);
+const app = getElementById<HTMLDivElement>('app')
+const api = new ApiClient('', getToken)
 
 const layout = `
   <aside class="app-sidebar" id="sidebar">
@@ -49,56 +50,57 @@ const layout = `
   </header>
     <main class="app-content" id="main-content"></main>
   </div>
-`;
+`
 
-app.innerHTML = layout;
+app.innerHTML = layout
 
-const mainContent = getElementById<HTMLElement>('main-content');
-const sidebar = getElementById<HTMLElement>('sidebar');
-const headerTitle = getElementById<HTMLElement>('header-title');
-const logoutBtn = getElementById<HTMLButtonElement>('logout-btn');
-const mobileMenuBtn = getElementById<HTMLButtonElement>('mobile-menu-btn');
+const mainContent = getElementById<HTMLElement>('main-content')
+const sidebar = getElementById<HTMLElement>('sidebar')
+const headerTitle = getElementById<HTMLElement>('header-title')
+const logoutBtn = getElementById<HTMLButtonElement>('logout-btn')
+const mobileMenuBtn = getElementById<HTMLButtonElement>('mobile-menu-btn')
 
-let backdrop: HTMLDivElement | null = null;
+let backdrop: HTMLDivElement | null = null
 
 logoutBtn.addEventListener('click', async () => {
+  if (!(await showConfirm(t.app.logoutConfirm))) return
   try {
-    await api.logout();
+    await api.logout()
   } catch {
-    clearToken();
+    clearToken()
   }
-  clearToken();
-  window.location.hash = '#/login';
-});
+  clearToken()
+  window.location.hash = '#/login'
+})
 
 mobileMenuBtn.addEventListener('click', () => {
-  const isOpen = sidebar.classList.toggle('sidebar-open');
-  mobileMenuBtn.setAttribute('aria-expanded', String(isOpen));
-  mobileMenuBtn.setAttribute('aria-label', isOpen ? t.app.closeMenu : t.app.openMenu);
+  const isOpen = sidebar.classList.toggle('sidebar-open')
+  mobileMenuBtn.setAttribute('aria-expanded', String(isOpen))
+  mobileMenuBtn.setAttribute('aria-label', isOpen ? t.app.closeMenu : t.app.openMenu)
   if (isOpen) {
-    backdrop = document.createElement('div');
-    backdrop.className = 'sidebar-backdrop';
-    backdrop.addEventListener('click', closeSidebar);
-    app.appendChild(backdrop);
+    backdrop = document.createElement('div')
+    backdrop.className = 'sidebar-backdrop'
+    backdrop.addEventListener('click', closeSidebar)
+    app.appendChild(backdrop)
   } else {
-    closeSidebar();
+    closeSidebar()
   }
-});
+})
 
 function closeSidebar() {
-  sidebar.classList.remove('sidebar-open');
-  mobileMenuBtn.setAttribute('aria-expanded', 'false');
-  mobileMenuBtn.setAttribute('aria-label', t.app.openMenu);
+  sidebar.classList.remove('sidebar-open')
+  mobileMenuBtn.setAttribute('aria-expanded', 'false')
+  mobileMenuBtn.setAttribute('aria-label', t.app.openMenu)
   if (backdrop) {
-    backdrop.remove();
-    backdrop = null;
+    backdrop.remove()
+    backdrop = null
   }
 }
 
 function updateNav(activeId: string) {
   document.querySelectorAll('.nav-item[data-target]').forEach((tab) => {
-    tab.classList.toggle('active', tab.getAttribute('data-target') === activeId);
-  });
+    tab.classList.toggle('active', tab.getAttribute('data-target') === activeId)
+  })
 }
 
 function updateHeaderTitle(target: string) {
@@ -106,47 +108,112 @@ function updateHeaderTitle(target: string) {
     editor: t.nav.editor,
     versions: t.nav.versions,
     headers: t.nav.headers,
-  };
-  headerTitle.textContent = titles[target] || '';
+  }
+  headerTitle.textContent = titles[target] || ''
 }
 
 function router() {
-  const hash = window.location.hash || '#/editor';
-  closeSidebar();
+  const hash = window.location.hash || '#/editor'
+  closeSidebar()
 
   if (!isAuthenticated() && hash !== '#/login') {
-    window.location.hash = '#/login';
-    return;
+    window.location.hash = '#/login'
+    return
   }
 
   if (hash === '#/login') {
-    sidebar.style.display = 'none';
-    const header = getElementById<HTMLElement>('app-header');
-    header.style.display = 'none';
-    renderLogin(mainContent, api);
-    return;
+    sidebar.style.display = 'none'
+    const header = getElementById<HTMLElement>('app-header')
+    header.style.display = 'none'
+    renderLogin(mainContent, api)
+    return
   }
 
-  sidebar.style.display = '';
-  const header = getElementById<HTMLElement>('app-header');
-  header.style.display = '';
+  sidebar.style.display = ''
+  const header = getElementById<HTMLElement>('app-header')
+  header.style.display = ''
 
   if (hash === '#/editor' || hash === '#/') {
-    updateNav('editor');
-    updateHeaderTitle('editor');
-    renderEditor(mainContent, api);
+    updateNav('editor')
+    updateHeaderTitle('editor')
+    renderEditor(mainContent, api)
   } else if (hash === '#/versions') {
-    updateNav('versions');
-    updateHeaderTitle('versions');
-    renderVersions(mainContent, api);
+    updateNav('versions')
+    updateHeaderTitle('versions')
+    renderVersions(mainContent, api)
   } else if (hash === '#/headers') {
-    updateNav('headers');
-    updateHeaderTitle('headers');
-    renderHeaders(mainContent, api);
+    updateNav('headers')
+    updateHeaderTitle('headers')
+    renderHeaders(mainContent, api)
   } else {
-    window.location.hash = '#/editor';
+    window.location.hash = '#/editor'
   }
 }
 
-window.addEventListener('hashchange', router);
-router();
+/** Check if any page has unsaved changes */
+function hasUnsavedChanges(): boolean {
+  return isEditorDirty() || isHeadersDirty()
+}
+
+let currentHash = window.location.hash || '#/editor'
+let pendingNavigation: string | null = null
+
+async function navigateTo(newHash: string): Promise<void> {
+  if (newHash === currentHash) return
+
+  if (newHash !== '#/login' && hasUnsavedChanges()) {
+    if (!(await showConfirm(t.app.unsavedLeave))) return
+  }
+
+  pendingNavigation = newHash
+  window.location.hash = newHash
+}
+
+window.addEventListener('beforeunload', (e) => {
+  if (hasUnsavedChanges()) {
+    e.preventDefault()
+  }
+})
+
+function setupNavigationGuards() {
+  document.querySelectorAll<HTMLAnchorElement>('.nav-item[data-target]').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault()
+      const target = link.getAttribute('data-target')!
+      const hashMap: Record<string, string> = {
+        editor: '#/editor',
+        versions: '#/versions',
+        headers: '#/headers',
+      }
+      navigateTo(hashMap[target] || '#/editor')
+    })
+  })
+}
+
+setupNavigationGuards()
+
+window.addEventListener('hashchange', async () => {
+  const newHash = window.location.hash || '#/editor'
+
+  if (pendingNavigation === newHash) {
+    pendingNavigation = null
+    currentHash = newHash
+    router()
+    return
+  }
+
+  if (newHash !== '#/login' && hasUnsavedChanges()) {
+    if (await showConfirm(t.app.unsavedLeave)) {
+      currentHash = newHash
+      router()
+    } else {
+      window.location.hash = currentHash
+    }
+    return
+  }
+
+  currentHash = newHash
+  router()
+})
+
+router()

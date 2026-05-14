@@ -1,10 +1,22 @@
-import { ApiClient, HeadersConfig } from './api';
-import { showToast } from './toast';
-import { t } from './i18n';
-import { iconSave, iconRefresh, iconPlus, iconTrash } from './icons';
-import { getElementById, querySelectorRequired } from './dom';
+import { ApiClient, HeadersConfig } from './api'
+import { showToast } from './toast'
+import { t } from './i18n'
+import { iconSave, iconRefresh, iconPlus, iconTrash } from './icons'
+import { showConfirm } from './modal'
+import { getElementById, querySelectorRequired } from './dom'
+
+export function isHeadersDirty(): boolean {
+  return headersDirty
+}
+
+let headersDirty = false
+
+export function resetHeadersDirty(): void {
+  headersDirty = false
+}
 
 export function renderHeaders(container: HTMLElement, api: ApiClient): void {
+  headersDirty = false
   container.innerHTML = `
     <div class="headers-page">
       <div class="headers-toolbar">
@@ -14,102 +26,124 @@ export function renderHeaders(container: HTMLElement, api: ApiClient): void {
       </div>
       <div class="headers-card" id="headers-list"></div>
     </div>
-  `;
+  `
 
-  const list = getElementById<HTMLElement>('headers-list');
-  const saveBtn = getElementById<HTMLButtonElement>('headers-save');
-  const resetBtn = getElementById<HTMLButtonElement>('headers-reset');
-  const addBtn = getElementById<HTMLButtonElement>('headers-add');
+  const list = getElementById<HTMLElement>('headers-list')
+  const saveBtn = getElementById<HTMLButtonElement>('headers-save')
+  const resetBtn = getElementById<HTMLButtonElement>('headers-reset')
+  const addBtn = getElementById<HTMLButtonElement>('headers-add')
+
+  const markDirty = () => {
+    headersDirty = true
+  }
 
   const renderRow = (key = '', val = '') => {
-    const row = document.createElement('div');
-    row.className = 'header-row';
-    
-    const keyInput = document.createElement('input');
-    keyInput.type = 'text';
-    keyInput.value = key;
-    keyInput.placeholder = t.headers.keyPlaceholder;
-    keyInput.className = 'h-key';
+    const row = document.createElement('div')
+    row.className = 'header-row'
 
-    const valInput = document.createElement('input');
-    valInput.type = 'text';
-    valInput.value = val;
-    valInput.placeholder = t.headers.valuePlaceholder;
-    valInput.className = 'h-val';
+    const keyInput = document.createElement('input')
+    keyInput.type = 'text'
+    keyInput.value = key
+    keyInput.placeholder = t.headers.keyPlaceholder
+    keyInput.className = 'h-key'
 
-    const delBtn = document.createElement('button');
-    delBtn.type = 'button';
-    delBtn.className = 'h-del';
-    delBtn.innerHTML = iconTrash;
-    delBtn.setAttribute('aria-label', t.headers.deleteRow);
+    const valInput = document.createElement('input')
+    valInput.type = 'text'
+    valInput.value = val
+    valInput.placeholder = t.headers.valuePlaceholder
+    valInput.className = 'h-val'
 
-    const errSpan = document.createElement('span');
-    errSpan.className = 'h-err';
-    errSpan.textContent = t.headers.invalidFormat;
+    const delBtn = document.createElement('button')
+    delBtn.type = 'button'
+    delBtn.className = 'h-del'
+    delBtn.innerHTML = iconTrash
+    delBtn.setAttribute('aria-label', t.headers.deleteRow)
 
-    row.appendChild(keyInput);
-    row.appendChild(valInput);
-    row.appendChild(delBtn);
-    row.appendChild(errSpan);
-    
+    const errSpan = document.createElement('span')
+    errSpan.className = 'h-err'
+    errSpan.textContent = t.headers.invalidFormat
+
+    row.appendChild(keyInput)
+    row.appendChild(valInput)
+    row.appendChild(delBtn)
+    row.appendChild(errSpan)
+
     keyInput.addEventListener('blur', () => {
-      const valid = /^[a-zA-Z0-9-]+$/.test(keyInput.value);
+      const valid = /^[a-zA-Z0-9-]+$/.test(keyInput.value)
       if (!valid && keyInput.value) {
-        errSpan.style.display = 'block';
+        errSpan.style.display = 'block'
       } else {
-        errSpan.style.display = 'none';
+        errSpan.style.display = 'none'
       }
-    });
+    })
 
-    delBtn.addEventListener('click', () => row.remove());
-    list.appendChild(row);
-  };
+    keyInput.addEventListener('input', markDirty)
+    valInput.addEventListener('input', markDirty)
+
+    delBtn.addEventListener('click', async () => {
+      if (await showConfirm(t.headers.deleteRowConfirm)) {
+        row.remove()
+        markDirty()
+      }
+    })
+    list.appendChild(row)
+  }
 
   const loadHeaders = async () => {
     try {
-      list.innerHTML = '';
-      const headers = await api.getHeaders();
+      list.innerHTML = ''
+      const headers = await api.getHeaders()
       for (const [k, v] of Object.entries(headers)) {
-        renderRow(k, v);
+        renderRow(k, v)
       }
-      if (Object.keys(headers).length === 0) renderRow();
-    } catch(e: unknown) {
-      showToast(e instanceof Error ? e.message : String(e), 'error');
+      if (Object.keys(headers).length === 0) renderRow()
+      headersDirty = false
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : String(e), 'error')
     }
-  };
+  }
 
-  addBtn.addEventListener('click', () => renderRow());
+  addBtn.addEventListener('click', () => {
+    renderRow()
+    markDirty()
+  })
 
-  resetBtn.addEventListener('click', () => loadHeaders());
+  resetBtn.addEventListener('click', async () => {
+    if (await showConfirm(t.headers.resetConfirm)) {
+      headersDirty = false
+      loadHeaders()
+    }
+  })
 
   saveBtn.addEventListener('click', async () => {
-    const config: HeadersConfig = {};
-    let hasError = false;
-    
-    list.querySelectorAll('.header-row').forEach(row => {
-      const k = querySelectorRequired<HTMLInputElement>(row, '.h-key').value.trim();
-      const v = querySelectorRequired<HTMLInputElement>(row, '.h-val').value.trim();
+    const config: HeadersConfig = {}
+    let hasError = false
+
+    list.querySelectorAll('.header-row').forEach((row) => {
+      const k = querySelectorRequired<HTMLInputElement>(row, '.h-key').value.trim()
+      const v = querySelectorRequired<HTMLInputElement>(row, '.h-val').value.trim()
       if (k) {
-        if (!/^[a-zA-Z0-9-]+$/.test(k)) hasError = true;
-        else config[k] = v;
+        if (!/^[a-zA-Z0-9-]+$/.test(k)) hasError = true
+        else config[k] = v
       }
-    });
+    })
 
     if (hasError) {
-      showToast(t.headers.fixInvalid, 'error');
-      return;
+      showToast(t.headers.fixInvalid, 'error')
+      return
     }
 
     try {
-      saveBtn.disabled = true;
-      await api.setHeaders(config);
-      showToast(t.headers.saved, 'success');
-    } catch(e: unknown) {
-      showToast(e instanceof Error ? e.message : String(e), 'error');
+      saveBtn.disabled = true
+      await api.setHeaders(config)
+      headersDirty = false
+      showToast(t.headers.saved, 'success')
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : String(e), 'error')
     } finally {
-      saveBtn.disabled = false;
+      saveBtn.disabled = false
     }
-  });
+  })
 
-  loadHeaders();
+  loadHeaders()
 }
