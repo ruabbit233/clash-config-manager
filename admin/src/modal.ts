@@ -1,16 +1,20 @@
-import { t } from './i18n';
-import { iconX } from './icons';
-import { querySelectorRequired } from './dom';
+import { t } from './i18n'
+import { iconX } from './icons'
+import { querySelectorRequired } from './dom'
 
 function createOverlay(): HTMLDivElement {
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  return overlay;
+  const overlay = document.createElement('div')
+  overlay.className = 'modal-overlay'
+  return overlay
 }
 
-function createCard(title: string): { card: HTMLDivElement; body: HTMLDivElement; footer: HTMLDivElement } {
-  const card = document.createElement('div');
-  card.className = 'modal-card';
+function createCard(title: string): {
+  card: HTMLDivElement
+  body: HTMLDivElement
+  footer: HTMLDivElement
+} {
+  const card = document.createElement('div')
+  card.className = 'modal-card'
 
   card.innerHTML = `
     <div class="modal-header">
@@ -19,110 +23,118 @@ function createCard(title: string): { card: HTMLDivElement; body: HTMLDivElement
     </div>
     <div class="modal-body"></div>
     <div class="modal-footer"></div>
-  `;
+  `
 
   return {
     card,
     body: querySelectorRequired<HTMLDivElement>(card, '.modal-body'),
     footer: querySelectorRequired<HTMLDivElement>(card, '.modal-footer'),
-  };
+  }
 }
 
 export function showConfirm(message: string, title: string = t.modal.confirm): Promise<boolean> {
   return new Promise((resolve) => {
-    const overlay = createOverlay();
-    const { card, body, footer } = createCard(title);
+    const overlay = createOverlay()
+    const { card, body, footer } = createCard(title)
 
-    body.textContent = message;
+    body.textContent = message
 
-    const cancelBtn = document.createElement('button');
-    cancelBtn.className = 'btn btn-secondary';
-    cancelBtn.textContent = t.modal.cancel;
+    const cancelBtn = document.createElement('button')
+    cancelBtn.className = 'btn btn-secondary'
+    cancelBtn.textContent = t.modal.cancel
 
-    const okBtn = document.createElement('button');
-    okBtn.className = 'btn btn-primary';
-    okBtn.textContent = t.modal.ok;
+    const okBtn = document.createElement('button')
+    okBtn.className = 'btn btn-primary'
+    okBtn.textContent = t.modal.ok
 
-    footer.append(cancelBtn, okBtn);
-    overlay.append(card);
-    document.body.append(overlay);
+    footer.append(cancelBtn, okBtn)
+    overlay.append(card)
+    document.body.append(overlay)
 
     const close = (result: boolean) => {
-      overlay.remove();
-      resolve(result);
-    };
+      overlay.remove()
+      resolve(result)
+    }
 
-    cancelBtn.addEventListener('click', () => close(false));
-    okBtn.addEventListener('click', () => close(true));
-    querySelectorRequired<HTMLButtonElement>(card, '.modal-close').addEventListener('click', () => close(false));
+    cancelBtn.addEventListener('click', () => close(false))
+    okBtn.addEventListener('click', () => close(true))
+    querySelectorRequired<HTMLButtonElement>(card, '.modal-close').addEventListener('click', () =>
+      close(false),
+    )
     overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) close(false);
-    });
+      if (e.target === overlay) close(false)
+    })
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        document.removeEventListener('keydown', onKey);
-        close(false);
+        document.removeEventListener('keydown', onKey)
+        close(false)
       }
-    };
-    document.addEventListener('keydown', onKey);
+    }
+    document.addEventListener('keydown', onKey)
 
-    okBtn.focus();
-  });
+    okBtn.focus()
+  })
 }
 
-export function showPrompt(message: string, defaultValue: string = '', title: string = t.modal.confirm): Promise<string | null> {
+export function showPrompt(
+  message: string,
+  defaultValue: string = '',
+  title: string = t.modal.confirm,
+): Promise<string | null> {
   return new Promise((resolve) => {
-    const overlay = createOverlay();
-    const { card, body, footer } = createCard(title);
+    const overlay = createOverlay()
+    const { card, body, footer } = createCard(title)
 
-    const label = document.createElement('div');
-    label.className = 'modal-message';
-    label.textContent = message;
+    const label = document.createElement('div')
+    label.className = 'modal-message'
+    label.textContent = message
 
-    const input = document.createElement('input');
-    input.className = 'modal-input';
-    input.value = defaultValue;
+    const input = document.createElement('input')
+    input.className = 'modal-input'
+    input.value = defaultValue
 
-    body.append(label, input);
+    body.append(label, input)
 
-    const cancelBtn = document.createElement('button');
-    cancelBtn.className = 'btn btn-secondary';
-    cancelBtn.textContent = t.modal.cancel;
+    const cancelBtn = document.createElement('button')
+    cancelBtn.className = 'btn btn-secondary'
+    cancelBtn.textContent = t.modal.cancel
 
-    const okBtn = document.createElement('button');
-    okBtn.className = 'btn btn-primary';
-    okBtn.textContent = t.modal.ok;
+    const okBtn = document.createElement('button')
+    okBtn.className = 'btn btn-primary'
+    okBtn.textContent = t.modal.ok
 
-    footer.append(cancelBtn, okBtn);
-    overlay.append(card);
-    document.body.append(overlay);
+    footer.append(cancelBtn, okBtn)
+    overlay.append(card)
+    document.body.append(overlay)
 
     const close = (result: string | null) => {
-      overlay.remove();
-      resolve(result);
-    };
+      overlay.remove()
+      resolve(result)
+    }
 
-    cancelBtn.addEventListener('click', () => close(null));
-    okBtn.addEventListener('click', () => close(input.value));
-    querySelectorRequired<HTMLButtonElement>(card, '.modal-close').addEventListener('click', () => close(null));
+    cancelBtn.addEventListener('click', () => close(null))
+    okBtn.addEventListener('click', () => close(input.value))
+    querySelectorRequired<HTMLButtonElement>(card, '.modal-close').addEventListener('click', () =>
+      close(null),
+    )
     overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) close(null);
-    });
+      if (e.target === overlay) close(null)
+    })
 
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.isComposing) close(input.value);
-    });
+      if (e.key === 'Enter' && !e.isComposing) close(input.value)
+    })
 
     const onEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        document.removeEventListener('keydown', onEscape);
-        close(null);
+        document.removeEventListener('keydown', onEscape)
+        close(null)
       }
-    };
-    document.addEventListener('keydown', onEscape);
+    }
+    document.addEventListener('keydown', onEscape)
 
-    input.focus();
-    input.select();
-  });
+    input.focus()
+    input.select()
+  })
 }

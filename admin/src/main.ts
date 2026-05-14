@@ -1,10 +1,19 @@
-import './style.css'
+import './styles/tokens.css'
+import './styles/base.css'
+import './styles/layout.css'
+import './styles/components.css'
+import './styles/login.css'
+import './styles/editor.css'
+import './styles/versions.css'
+import './styles/headers.css'
+import './styles/responsive.css'
 import { ApiClient } from './api'
 import { getToken, isAuthenticated, clearToken } from './auth'
-import { renderLogin } from './login'
-import { renderEditor, isEditorDirty } from './editor'
-import { renderVersions } from './versions'
-import { renderHeaders, isHeadersDirty } from './headers'
+import { createLoginPage } from './login'
+import { createEditorPage } from './editor'
+import { createVersionsPage } from './versions'
+import { createHeadersPage } from './headers'
+import type { Page } from './page'
 import { t } from './i18n'
 import { showConfirm } from './modal'
 import { iconShield, iconCode, iconClock, iconList, iconLogout, iconMenu } from './icons'
@@ -61,6 +70,7 @@ const logoutBtn = getElementById<HTMLButtonElement>('logout-btn')
 const mobileMenuBtn = getElementById<HTMLButtonElement>('mobile-menu-btn')
 
 let backdrop: HTMLDivElement | null = null
+let currentPage: Page | null = null
 
 logoutBtn.addEventListener('click', async () => {
   if (!(await showConfirm(t.app.logoutConfirm))) return
@@ -125,7 +135,10 @@ function router() {
     sidebar.style.display = 'none'
     const header = getElementById<HTMLElement>('app-header')
     header.style.display = 'none'
-    renderLogin(mainContent, api)
+    currentPage?.unmount()
+    const page = createLoginPage()
+    page.mount(mainContent, api)
+    currentPage = page
     return
   }
 
@@ -136,15 +149,24 @@ function router() {
   if (hash === '#/editor' || hash === '#/') {
     updateNav('editor')
     updateHeaderTitle('editor')
-    renderEditor(mainContent, api)
+    currentPage?.unmount()
+    const page = createEditorPage()
+    page.mount(mainContent, api)
+    currentPage = page
   } else if (hash === '#/versions') {
     updateNav('versions')
     updateHeaderTitle('versions')
-    renderVersions(mainContent, api)
+    currentPage?.unmount()
+    const page = createVersionsPage()
+    page.mount(mainContent, api)
+    currentPage = page
   } else if (hash === '#/headers') {
     updateNav('headers')
     updateHeaderTitle('headers')
-    renderHeaders(mainContent, api)
+    currentPage?.unmount()
+    const page = createHeadersPage()
+    page.mount(mainContent, api)
+    currentPage = page
   } else {
     window.location.hash = '#/editor'
   }
@@ -152,7 +174,7 @@ function router() {
 
 /** Check if any page has unsaved changes */
 function hasUnsavedChanges(): boolean {
-  return isEditorDirty() || isHeadersDirty()
+  return currentPage?.isDirty() ?? false
 }
 
 let currentHash = window.location.hash || '#/editor'

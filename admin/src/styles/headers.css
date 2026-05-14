@@ -1,0 +1,79 @@
+/* ===== Page: Headers ===== */
+.headers-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.headers-toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+.headers-toolbar {
+  flex-wrap: wrap;
+}
+
+.headers-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.header-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.header-row:last-child {
+  border-bottom: none;
+}
+
+.h-key {
+  width: 240px;
+  min-width: 160px;
+  flex-shrink: 0;
+}
+
+.h-val {
+  flex: 1;
+}
+
+.h-del {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--border-secondary);
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+
+.h-del:hover {
+  color: var(--error);
+  border-color: var(--error);
+  background-color: var(--error-bg);
+}
+
+.h-del svg {
+  width: 14px;
+  height: 14px;
+}
+
+.h-err {
+  color: var(--error);
+  font-size: 12px;
+  margin-left: 4px;
+  display: none;
+  white-space: nowrap;
+}

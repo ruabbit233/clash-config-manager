@@ -1,0 +1,41 @@
+/* ===== Page: Versions ===== */
+.versions-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.diff-section {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+}
+
+.diff-selects {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.diff-select {
+  min-width: 200px;
+}
+
+.versions-section {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.load-more-wrapper {
+  text-align: center;
+  padding: 12px;
+}
+
+.version-actions {
+  display: flex;
+  gap: 6px;
+}

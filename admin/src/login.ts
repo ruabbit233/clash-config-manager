@@ -1,11 +1,14 @@
-import { ApiClient } from './api';
-import { setToken, setExpiresAt } from './auth';
-import { t } from './i18n';
-import { iconShield } from './icons';
-import { getElementById } from './dom';
+import { ApiClient } from './api'
+import { setToken, setExpiresAt } from './auth'
+import { t } from './i18n'
+import { iconShield } from './icons'
+import { getElementById } from './dom'
+import type { Page } from './page'
 
-export function renderLogin(container: HTMLElement, api: ApiClient): void {
-  container.innerHTML = `
+export function createLoginPage(): Page {
+  return {
+    mount(container: HTMLElement, api: ApiClient): void {
+      container.innerHTML = `
     <div class="login-page">
       <div class="login-card">
         <div class="login-brand">
@@ -21,39 +24,45 @@ export function renderLogin(container: HTMLElement, api: ApiClient): void {
         <div id="login-error" class="login-error"></div>
       </div>
     </div>
-  `;
+  `
 
-  const btn = getElementById<HTMLButtonElement>('login-btn');
-  const input = getElementById<HTMLInputElement>('login-password');
-  const err = getElementById<HTMLDivElement>('login-error');
+      const btn = getElementById<HTMLButtonElement>('login-btn')
+      const input = getElementById<HTMLInputElement>('login-password')
+      const err = getElementById<HTMLDivElement>('login-error')
 
-  btn.addEventListener('click', async () => {
-    const password = input.value.trim();
-    if (!password) {
-      err.textContent = t.login.emptyPassword;
-      err.style.display = 'block';
-      input.focus();
-      return;
-    }
+      btn.addEventListener('click', async () => {
+        const password = input.value.trim()
+        if (!password) {
+          err.textContent = t.login.emptyPassword
+          err.style.display = 'block'
+          input.focus()
+          return
+        }
 
-    try {
-      btn.disabled = true;
-      btn.textContent = t.login.loading;
-      err.style.display = 'none';
-      const { token, expiresAt } = await api.login(password);
-      setToken(token);
-      setExpiresAt(expiresAt);
-      window.location.hash = '#/editor';
-    } catch (e: unknown) {
-      err.textContent = e instanceof Error ? e.message : String(e);
-      err.style.display = 'block';
-    } finally {
-      btn.disabled = false;
-      btn.textContent = t.login.submit;
-    }
-  });
-  
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.isComposing) btn.click();
-  });
+        try {
+          btn.disabled = true
+          btn.textContent = t.login.loading
+          err.style.display = 'none'
+          const { token, expiresAt } = await api.login(password)
+          setToken(token)
+          setExpiresAt(expiresAt)
+          window.location.hash = '#/editor'
+        } catch (e: unknown) {
+          err.textContent = e instanceof Error ? e.message : String(e)
+          err.style.display = 'block'
+        } finally {
+          btn.disabled = false
+          btn.textContent = t.login.submit
+        }
+      })
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.isComposing) btn.click()
+      })
+    },
+    unmount(): void {},
+    isDirty(): boolean {
+      return false
+    },
+  }
 }

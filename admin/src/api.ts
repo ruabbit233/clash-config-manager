@@ -1,4 +1,5 @@
 import { AuthError, handleAuthError } from './auth'
+import type { HeadersConfig, VersionListItem, VersionSnapshot } from '@shared/types'
 
 export interface LoginResponse {
   token: string
@@ -14,32 +15,11 @@ export interface SaveConfigResponse {
   contentHash: string
   createdAt: string
 }
-export interface VersionListItem {
-  id: string
-  createdAt: string
-  message: string
-  contentHash: string
-}
-export interface VersionSnapshot {
-  id: string
-  content: string
-  message: string
-  createdAt: string
-  contentHash: string
-}
 export interface UpdateVersionResponse {
   id: string
   message: string
   createdAt: string
   contentHash: string
-}
-export interface HeadersConfig {
-  [headerName: string]: string
-}
-export interface DiffResponse {
-  fromVersion: string
-  toVersion: string
-  diff: string
 }
 
 export class ApiClient {
@@ -154,14 +134,5 @@ export class ApiClient {
       method: 'PUT',
       body: JSON.stringify(headers),
     })
-  }
-
-  async getDiff(fromId: string, toId: string): Promise<DiffResponse> {
-    const [fromSnap, toSnap] = await Promise.all([this.getVersion(fromId), this.getVersion(toId)])
-    return {
-      fromVersion: fromId,
-      toVersion: toId,
-      diff: `${fromSnap.content}\n---\n${toSnap.content}`,
-    }
   }
 }
