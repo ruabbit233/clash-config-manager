@@ -116,29 +116,57 @@ Auth: `Authorization: Bearer <token>` header. Returns 401 if invalid or expired.
 
 ```
 clash-config-manager/
-├── wrangler.toml          # Worker config (KV, assets, secrets)
-├── package.json           # Project dependencies (Worker + Admin)
-├── tsconfig.json          # Worker TypeScript config
+├── wrangler.toml              # Worker config (KV, assets, secrets)
+├── package.json               # Project dependencies (Worker + Admin)
+├── tsconfig.json              # Worker TypeScript config
+├── shared/
+│   └── types.ts               # Shared types (VersionSnapshot, HeadersConfig, etc.)
 ├── src/
-│   ├── index.ts           # Worker entry (Hono routes)
-│   ├── storage.ts         # KV storage layer (ULID, SHA-256, version CRUD)
-│   ├── auth.ts            # JWT generation/verification (Web Crypto HMAC-SHA256)
-│   └── types.ts           # TypeScript interfaces
+│   ├── index.ts               # Worker entry (app init, route mounting)
+│   ├── auth.ts                # JWT generation/verification (Web Crypto HMAC-SHA256)
+│   ├── storage.ts             # KV storage layer (ULID, SHA-256, version CRUD)
+│   ├── types.ts               # Re-exports shared types + backend-only types/configs
+│   ├── routes/
+│   │   ├── auth.ts            # /api/auth/* routes (login, verify, logout)
+│   │   ├── config.ts          # /api/config routes (GET, PUT)
+│   │   ├── versions.ts        # /api/versions/* routes (list, get, rollback, patch)
+│   │   ├── headers.ts         # /api/headers routes (GET, PUT)
+│   │   └── public.ts          # GET / and /download public endpoints
+│   ├── middleware/
+│   │   └── auth.ts            # JWT auth guard middleware
+│   └── utils/
+│       └── response.ts        # Shared helpers (safeParseJson, createYamlResponse, setAuthCookies)
 ├── admin/
-│   ├── vite.config.ts     # Vite config (proxy, build)
-│   ├── tsconfig.json      # Admin TypeScript config
-│   ├── index.html         # SPA entry
+│   ├── vite.config.ts         # Vite config (proxy, build, @shared alias)
+│   ├── tsconfig.json          # Admin TypeScript config
+│   ├── index.html             # SPA entry
 │   └── src/
-│       ├── main.ts        # App shell + hash router
-│       ├── api.ts         # Typed API client
-│       ├── auth.ts        # Token management (localStorage)
-│       ├── login.ts       # Login form
-│       ├── editor.ts      # CodeMirror 6 YAML editor
-│       ├── versions.ts    # Version list + diff + rollback
-│       ├── headers.ts     # Custom response headers editor
-│       ├── toast.ts       # Toast notifications
-│       └── style.css      # Dark theme styles
-├── .dev.vars              # Local dev secrets
+│       ├── main.ts            # App shell + hash router + page lifecycle
+│       ├── page.ts            # Page interface (mount/unmount/isDirty)
+│       ├── api.ts             # Typed API client
+│       ├── auth.ts            # Token management (memory + cookie)
+│       ├── i18n.ts            # i18n loader
+│       ├── locales/
+│       │   └── zh-CN.ts       # Chinese translations
+│       ├── login.ts           # Login page
+│       ├── editor.ts          # CodeMirror 6 YAML editor page
+│       ├── versions.ts        # Version list + diff + rollback page
+│       ├── headers.ts         # Custom response headers editor page
+│       ├── modal.ts           # Confirm/prompt modal
+│       ├── toast.ts           # Toast notifications
+│       ├── icons.ts           # SVG icon constants
+│       ├── dom.ts             # DOM query helpers
+│       └── styles/
+│           ├── tokens.css     # CSS custom properties (design tokens)
+│           ├── base.css       # Reset & base styles
+│           ├── layout.css     # App shell (sidebar, header, content)
+│           ├── components.css # Buttons, forms, cards, table, modal, toast, etc.
+│           ├── login.css      # Login page styles
+│           ├── editor.css     # Editor page + CodeMirror styles
+│           ├── versions.css   # Versions page styles
+│           ├── headers.css    # Headers page styles
+│           └── responsive.css # Media queries & animations
+├── .dev.vars                  # Local dev secrets
 └── .gitignore
 ```
 

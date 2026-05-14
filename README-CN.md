@@ -128,29 +128,57 @@ routes = [
 
 ```
 clash-config-manager/
-├── wrangler.toml          # Worker 配置（KV、静态资源、密钥）
-├── package.json           # 项目依赖（Worker + 管理后台）
-├── tsconfig.json          # Worker TypeScript 配置
+├── wrangler.toml              # Worker 配置（KV、静态资源、密钥）
+├── package.json               # 项目依赖（Worker + 管理后台）
+├── tsconfig.json              # Worker TypeScript 配置
+├── shared/
+│   └── types.ts               # 共享类型（VersionSnapshot、HeadersConfig 等）
 ├── src/
-│   ├── index.ts           # Worker 入口（Hono 路由）
-│   ├── storage.ts         # KV 存储层（ULID、SHA-256、版本 CRUD）
-│   ├── auth.ts            # JWT 生成/验证（Web Crypto HMAC-SHA256）
-│   └── types.ts           # TypeScript 类型定义
+│   ├── index.ts               # Worker 入口（应用初始化、路由挂载）
+│   ├── auth.ts                # JWT 生成/验证（Web Crypto HMAC-SHA256）
+│   ├── storage.ts             # KV 存储层（ULID、SHA-256、版本 CRUD）
+│   ├── types.ts               # 重新导出共享类型 + 后端专用类型/配置
+│   ├── routes/
+│   │   ├── auth.ts            # /api/auth/* 路由（登录、验证、登出）
+│   │   ├── config.ts          # /api/config 路由（GET、PUT）
+│   │   ├── versions.ts        # /api/versions/* 路由（列表、获取、回滚、更新备注）
+│   │   ├── headers.ts         # /api/headers 路由（GET、PUT）
+│   │   └── public.ts          # GET / 和 /download 公开端点
+│   ├── middleware/
+│   │   └── auth.ts            # JWT 认证守卫中间件
+│   └── utils/
+│       └── response.ts        # 共享工具函数（safeParseJson、createYamlResponse、setAuthCookies）
 ├── admin/
-│   ├── vite.config.ts     # Vite 配置（代理、构建）
-│   ├── tsconfig.json      # 管理后台 TypeScript 配置
-│   ├── index.html         # SPA 入口
+│   ├── vite.config.ts         # Vite 配置（代理、构建、@shared 别名）
+│   ├── tsconfig.json          # 管理后台 TypeScript 配置
+│   ├── index.html             # SPA 入口
 │   └── src/
-│       ├── main.ts        # 应用外壳 + Hash 路由
-│       ├── api.ts         # 类型化 API 客户端
-│       ├── auth.ts        # Token 管理（localStorage）
-│       ├── login.ts       # 登录表单
-│       ├── editor.ts      # CodeMirror 6 YAML 编辑器
-│       ├── versions.ts    # 版本列表 + 差异对比 + 回滚
-│       ├── headers.ts     # 自定义响应头编辑器
-│       ├── toast.ts       # Toast 通知
-│       └── style.css      # 暗色主题样式
-├── .dev.vars              # 本地开发密钥
+│       ├── main.ts            # 应用外壳 + Hash 路由 + 页面生命周期
+│       ├── page.ts            # Page 接口（mount/unmount/isDirty）
+│       ├── api.ts             # 类型化 API 客户端
+│       ├── auth.ts            # Token 管理（内存 + Cookie）
+│       ├── i18n.ts            # 国际化加载器
+│       ├── locales/
+│       │   └── zh-CN.ts       # 中文翻译
+│       ├── login.ts           # 登录页面
+│       ├── editor.ts          # CodeMirror 6 YAML 编辑器页面
+│       ├── versions.ts        # 版本列表 + 差异对比 + 回滚页面
+│       ├── headers.ts         # 自定义响应头编辑页面
+│       ├── modal.ts           # 确认/输入弹窗
+│       ├── toast.ts           # Toast 通知
+│       ├── icons.ts           # SVG 图标常量
+│       ├── dom.ts             # DOM 查询工具函数
+│       └── styles/
+│           ├── tokens.css     # CSS 自定义属性（设计令牌）
+│           ├── base.css       # 重置 & 基础样式
+│           ├── layout.css     # 应用外壳（侧边栏、顶栏、内容区）
+│           ├── components.css # 按钮、表单、卡片、表格、弹窗、Toast 等
+│           ├── login.css      # 登录页样式
+│           ├── editor.css     # 编辑器页面 + CodeMirror 样式
+│           ├── versions.css   # 版本页样式
+│           ├── headers.css    # 响应头页样式
+│           └── responsive.css # 媒体查询 & 动画
+├── .dev.vars                  # 本地开发密钥
 └── .gitignore
 ```
 
