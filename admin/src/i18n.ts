@@ -14,6 +14,7 @@ export const t = {
     passwordPlaceholder: '请输入密码',
     submit: '登录',
     loading: '登录中...',
+    emptyPassword: '请输入密码',
   },
   editor: {
     save: '保存',
@@ -27,6 +28,7 @@ export const t = {
     versionMessageLabel: '版本备注',
     configSaved: '配置已保存',
     discardConfirm: '确定放弃修改并重新加载？',
+    notReady: '编辑器尚未就绪，请稍后重试',
   },
   versions: {
     compare: '对比',

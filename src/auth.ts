@@ -1,6 +1,5 @@
 import type { TokenPayload } from "./types";
-
-const DEFAULT_EXPIRES_IN_SECONDS = 604800;
+import { AUTH_CONFIG } from "./types";
 
 const toBase64 = (input: string): string => btoa(input);
 
@@ -33,7 +32,7 @@ const importHmacKey = async (secret: string): Promise<CryptoKey> =>
 
 export const generateToken = async (
   secret: string,
-  expiresInSeconds = DEFAULT_EXPIRES_IN_SECONDS,
+  expiresInSeconds: number = AUTH_CONFIG.TOKEN_EXPIRY_SECONDS,
 ): Promise<string> => {
   const now = Math.floor(Date.now() / 1000);
   const payload: TokenPayload = {

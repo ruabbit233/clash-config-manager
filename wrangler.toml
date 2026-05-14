@@ -12,5 +12,7 @@ run_worker_first = true
 [build]
 command = "npm run build"
 
+# The `id` field must be set to the KV namespace ID before deploying.
+# Create one with: npx wrangler kv namespace create "CONFIG_KV"
 [[kv_namespaces]]
 binding = "KV"

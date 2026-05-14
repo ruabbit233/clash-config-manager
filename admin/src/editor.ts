@@ -9,6 +9,10 @@ import { showToast } from './toast';
 import { t } from './i18n';
 import { showConfirm, showPrompt } from './modal';
 import { iconSave, iconRefresh, iconDownload, iconCheck, iconAlert } from './icons';
+import { getElementById } from './dom';
+
+let activeView: EditorView | null = null;
+let autosaveTimer: number | undefined;
 
 export function renderEditor(container: HTMLElement, api: ApiClient, onSaved?: () => void): void {
   container.innerHTML = `
@@ -23,17 +27,16 @@ export function renderEditor(container: HTMLElement, api: ApiClient, onSaved?: (
     </div>
   `;
 
-  const wrapper = document.getElementById('editor-wrapper') as HTMLElement;
-  const saveBtn = document.getElementById('editor-save') as HTMLButtonElement;
-  const resetBtn = document.getElementById('editor-reset') as HTMLButtonElement;
-  const downloadBtn = document.getElementById('editor-download') as HTMLButtonElement;
-  const statusSpan = document.getElementById('editor-status') as HTMLSpanElement;
+  const wrapper = getElementById<HTMLElement>('editor-wrapper');
+  const saveBtn = getElementById<HTMLButtonElement>('editor-save');
+  const resetBtn = getElementById<HTMLButtonElement>('editor-reset');
+  const downloadBtn = getElementById<HTMLButtonElement>('editor-download');
+  const statusSpan = getElementById<HTMLSpanElement>('editor-status');
 
-  let view: EditorView;
   let originalContent = '';
 
   const initEditor = (content: string) => {
-    if (view) view.destroy();
+    if (activeView) activeView.destroy();
     
     const updateListener = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
@@ -44,12 +47,13 @@ export function renderEditor(container: HTMLElement, api: ApiClient, onSaved?: (
           statusSpan.innerHTML = `<span class="status-dot valid"></span> ${iconCheck} ${t.editor.validYaml}`;
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : String(e);
-          statusSpan.innerHTML = `<span class="status-dot invalid"></span> ${iconAlert} ${t.editor.invalidYaml}: ${msg}`;
+          const escaped = msg.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+          statusSpan.innerHTML = `<span class="status-dot invalid"></span> ${iconAlert} ${t.editor.invalidYaml}: ${escaped}`;
         }
       }
     });
 
-    view = new EditorView({
+    activeView = new EditorView({
       state: EditorState.create({
         doc: content,
         extensions: [basicSetup, yaml(), oneDark, updateListener]
@@ -79,7 +83,11 @@ export function renderEditor(container: HTMLElement, api: ApiClient, onSaved?: (
   };
 
   saveBtn.addEventListener('click', async () => {
-    const doc = view.state.doc.toString();
+    if (!activeView) {
+      showToast(t.editor.notReady, 'error');
+      return;
+    }
+    const doc = activeView.state.doc.toString();
     try {
       yamlParser.parse(doc);
     } catch (e: unknown) {
@@ -113,12 +121,20 @@ export function renderEditor(container: HTMLElement, api: ApiClient, onSaved?: (
     window.open('/download', '_blank');
   });
 
+  if (autosaveTimer !== undefined) {
+    window.clearInterval(autosaveTimer);
+  }
+  if (activeView) {
+    activeView.destroy();
+    activeView = null;
+  }
+
   loadConfig();
-  
+
   // Autosave Draft interval
-  setInterval(() => {
-    if (view && view.state.doc.toString() !== originalContent) {
-      localStorage.setItem('clash_admin_draft', view.state.doc.toString());
+  autosaveTimer = window.setInterval(() => {
+    if (activeView && activeView.state.doc.toString() !== originalContent) {
+      localStorage.setItem('clash_admin_draft', activeView.state.doc.toString());
     }
   }, 30000);
 }

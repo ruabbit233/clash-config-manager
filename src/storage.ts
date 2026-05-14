@@ -4,10 +4,10 @@ import type {
   VersionListItem,
   VersionSnapshot,
 } from "./types";
+import { STORAGE_CONFIG } from "./types";
 
-const VERSION_PREFIX = "version:";
-const CURRENT_KEY = "config:current";
-const HEADERS_KEY = "headers:config";
+const { VERSION_PREFIX, CURRENT_KEY, HEADERS_KEY } = STORAGE_CONFIG;
+
 const ULID_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 const encodeBase32 = (value: number, length: number): string => {
@@ -90,7 +90,7 @@ export const getVersion = async (
 
 export const listVersions = async (
   kv: KVNamespace,
-  limit = 20,
+  limit: number = STORAGE_CONFIG.DEFAULT_PAGE_LIMIT,
   cursor?: string,
 ): Promise<{ keys: VersionListItem[]; cursor?: string }> => {
   const result = await kv.list({

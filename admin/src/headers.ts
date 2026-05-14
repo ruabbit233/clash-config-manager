@@ -2,6 +2,7 @@ import { ApiClient, HeadersConfig } from './api';
 import { showToast } from './toast';
 import { t } from './i18n';
 import { iconSave, iconRefresh, iconPlus, iconTrash } from './icons';
+import { getElementById, querySelectorRequired } from './dom';
 
 export function renderHeaders(container: HTMLElement, api: ApiClient): void {
   container.innerHTML = `
@@ -15,23 +16,40 @@ export function renderHeaders(container: HTMLElement, api: ApiClient): void {
     </div>
   `;
 
-  const list = document.getElementById('headers-list') as HTMLElement;
-  const saveBtn = document.getElementById('headers-save') as HTMLButtonElement;
-  const resetBtn = document.getElementById('headers-reset') as HTMLButtonElement;
-  const addBtn = document.getElementById('headers-add') as HTMLButtonElement;
+  const list = getElementById<HTMLElement>('headers-list');
+  const saveBtn = getElementById<HTMLButtonElement>('headers-save');
+  const resetBtn = getElementById<HTMLButtonElement>('headers-reset');
+  const addBtn = getElementById<HTMLButtonElement>('headers-add');
 
   const renderRow = (key = '', val = '') => {
     const row = document.createElement('div');
     row.className = 'header-row';
-    row.innerHTML = `
-      <input type="text" value="${key}" placeholder="${t.headers.keyPlaceholder}" class="h-key" />
-      <input type="text" value="${val}" placeholder="${t.headers.valuePlaceholder}" class="h-val" />
-      <button class="h-del">${iconTrash}</button>
-      <span class="h-err">${t.headers.invalidFormat}</span>
-    `;
     
-    const keyInput = row.querySelector('.h-key') as HTMLInputElement;
-    const errSpan = row.querySelector('.h-err') as HTMLSpanElement;
+    const keyInput = document.createElement('input');
+    keyInput.type = 'text';
+    keyInput.value = key;
+    keyInput.placeholder = t.headers.keyPlaceholder;
+    keyInput.className = 'h-key';
+
+    const valInput = document.createElement('input');
+    valInput.type = 'text';
+    valInput.value = val;
+    valInput.placeholder = t.headers.valuePlaceholder;
+    valInput.className = 'h-val';
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'h-del';
+    delBtn.innerHTML = iconTrash;
+
+    const errSpan = document.createElement('span');
+    errSpan.className = 'h-err';
+    errSpan.textContent = t.headers.invalidFormat;
+
+    row.appendChild(keyInput);
+    row.appendChild(valInput);
+    row.appendChild(delBtn);
+    row.appendChild(errSpan);
     
     keyInput.addEventListener('blur', () => {
       const valid = /^[a-zA-Z0-9-]+$/.test(keyInput.value);
@@ -42,7 +60,7 @@ export function renderHeaders(container: HTMLElement, api: ApiClient): void {
       }
     });
 
-    row.querySelector('.h-del')!.addEventListener('click', () => row.remove());
+    delBtn.addEventListener('click', () => row.remove());
     list.appendChild(row);
   };
 
@@ -68,8 +86,8 @@ export function renderHeaders(container: HTMLElement, api: ApiClient): void {
     let hasError = false;
     
     list.querySelectorAll('.header-row').forEach(row => {
-      const k = (row.querySelector('.h-key') as HTMLInputElement).value.trim();
-      const v = (row.querySelector('.h-val') as HTMLInputElement).value.trim();
+      const k = querySelectorRequired<HTMLInputElement>(row, '.h-key').value.trim();
+      const v = querySelectorRequired<HTMLInputElement>(row, '.h-val').value.trim();
       if (k) {
         if (!/^[a-zA-Z0-9-]+$/.test(k)) hasError = true;
         else config[k] = v;

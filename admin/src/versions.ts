@@ -4,6 +4,7 @@ import * as Diff from 'diff';
 import { t } from './i18n';
 import { showConfirm } from './modal';
 import { iconCompare } from './icons';
+import { getElementById } from './dom';
 
 export function renderVersions(container: HTMLElement, api: ApiClient): void {
   container.innerHTML = `
@@ -45,12 +46,12 @@ export function renderVersions(container: HTMLElement, api: ApiClient): void {
     </div>
   `;
 
-  const tbody = document.getElementById('versions-tbody') as HTMLElement;
-  const loadMoreBtn = document.getElementById('load-more-btn') as HTMLButtonElement;
-  const fromSel = document.getElementById('diff-from') as HTMLSelectElement;
-  const toSel = document.getElementById('diff-to') as HTMLSelectElement;
-  const diffBtn = document.getElementById('diff-btn') as HTMLButtonElement;
-  const diffOutput = document.getElementById('diff-output') as HTMLElement;
+  const tbody = getElementById<HTMLElement>('versions-tbody');
+  const loadMoreBtn = getElementById<HTMLButtonElement>('load-more-btn');
+  const fromSel = getElementById<HTMLSelectElement>('diff-from');
+  const toSel = getElementById<HTMLSelectElement>('diff-to');
+  const diffBtn = getElementById<HTMLButtonElement>('diff-btn');
+  const diffOutput = getElementById<HTMLElement>('diff-output');
 
   let currentCursor: string | undefined;
   const pageSize = 10;
@@ -75,12 +76,31 @@ export function renderVersions(container: HTMLElement, api: ApiClient): void {
         const tr = document.createElement('tr');
         const date = new Date(v.createdAt).toLocaleString('zh-CN');
         const shortHash = v.contentHash.substring(0, 8);
-        tr.innerHTML = `
-          <td>${date}</td>
-          <td>${v.message || '-'}</td>
-          <td><span class="mono">${shortHash}</span></td>
-          <td><button class="btn btn-secondary btn-sm rollback-btn" data-id="${v.id}">${t.versions.rollback}</button></td>
-        `;
+        
+        const tdDate = document.createElement('td');
+        tdDate.textContent = date;
+        
+        const tdMessage = document.createElement('td');
+        tdMessage.textContent = v.message || '-';
+        
+        const tdHash = document.createElement('td');
+        const spanHash = document.createElement('span');
+        spanHash.className = 'mono';
+        spanHash.textContent = shortHash;
+        tdHash.appendChild(spanHash);
+        
+        const tdAction = document.createElement('td');
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-secondary btn-sm rollback-btn';
+        btn.setAttribute('data-id', v.id);
+        btn.textContent = t.versions.rollback;
+        tdAction.appendChild(btn);
+        
+        tr.appendChild(tdDate);
+        tr.appendChild(tdMessage);
+        tr.appendChild(tdHash);
+        tr.appendChild(tdAction);
+        
         tbody.appendChild(tr);
 
         [fromSel, toSel].forEach(sel => {
@@ -90,7 +110,6 @@ export function renderVersions(container: HTMLElement, api: ApiClient): void {
           sel.appendChild(opt.cloneNode(true));
         });
 
-        const btn = tr.querySelector('.rollback-btn') as HTMLButtonElement;
         btn.addEventListener('click', async () => {
           const id = btn.getAttribute('data-id')!;
           if (await showConfirm(t.versions.rollbackConfirm(id.substring(0, 8)))) {

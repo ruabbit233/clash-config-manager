@@ -5,32 +5,38 @@ export class AuthError extends Error {
   }
 }
 
+const EXPIRES_COOKIE = 'clash_admin_expires';
+
+let memoryToken: string | null = null;
+
 export function getToken(): string | null {
-  return localStorage.getItem('clash_admin_token');
+  return memoryToken;
 }
 
 export function setToken(token: string): void {
-  localStorage.setItem('clash_admin_token', token);
+  memoryToken = token;
 }
 
 export function clearToken(): void {
-  localStorage.removeItem('clash_admin_token');
+  memoryToken = null;
+  document.cookie = `${EXPIRES_COOKIE}=; Path=/; Max-Age=0; SameSite=Strict`;
 }
 
 export function isAuthenticated(): boolean {
-  return !!getToken();
+  return !!getExpiresAt();
 }
 
 export function getExpiresAt(): string | null {
-  return localStorage.getItem('clash_admin_expires');
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${EXPIRES_COOKIE}=([^;]+)`));
+  if (!match) return null;
+  return decodeURIComponent(match[1]);
 }
 
 export function setExpiresAt(expiresAt: string): void {
-  localStorage.setItem('clash_admin_expires', expiresAt);
+  document.cookie = `${EXPIRES_COOKIE}=${encodeURIComponent(expiresAt)}; Path=/; Secure; SameSite=Strict; Max-Age=${7 * 24 * 60 * 60}`;
 }
 
 export function handleAuthError(): void {
   clearToken();
-  localStorage.removeItem('clash_admin_expires');
   window.location.hash = '#/login';
 }

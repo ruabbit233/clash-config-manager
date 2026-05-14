@@ -7,7 +7,12 @@
     "dev:admin": "vite --config admin/vite.config.ts",
     "build": "vite build --config admin/vite.config.ts",
     "deploy": "wrangler deploy",
-    "preview": "vite preview --config admin/vite.config.ts"
+    "preview": "vite preview --config admin/vite.config.ts",
+    "lint": "eslint src admin/src",
+    "format": "prettier --write 'src/**/*.ts' 'admin/src/**/*.ts' 'admin/vite.config.ts'",
+    "format:check": "prettier --check 'src/**/*.ts' 'admin/src/**/*.ts' 'admin/vite.config.ts'",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@codemirror/lang-yaml": "^6.1.1",
@@ -21,9 +26,15 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250427.0",
+    "@eslint/js": "^9.0.0",
     "@types/diff": "^5.2.1",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^10.0.0",
+    "prettier": "^3.0.0",
     "typescript": "^5.8.0",
+    "typescript-eslint": "^8.0.0",
     "vite": "^5.2.8",
+    "vitest": "^3.0.0",
     "wrangler": "^4.14.0"
   }
 }

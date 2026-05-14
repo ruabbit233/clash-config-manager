@@ -1,5 +1,6 @@
 import { t } from './i18n';
 import { iconX } from './icons';
+import { querySelectorRequired } from './dom';
 
 function createOverlay(): HTMLDivElement {
   const overlay = document.createElement('div');
@@ -22,8 +23,8 @@ function createCard(title: string): { card: HTMLDivElement; body: HTMLDivElement
 
   return {
     card,
-    body: card.querySelector('.modal-body') as HTMLDivElement,
-    footer: card.querySelector('.modal-footer') as HTMLDivElement,
+    body: querySelectorRequired<HTMLDivElement>(card, '.modal-body'),
+    footer: querySelectorRequired<HTMLDivElement>(card, '.modal-footer'),
   };
 }
 
@@ -53,7 +54,7 @@ export function showConfirm(message: string, title: string = t.modal.confirm): P
 
     cancelBtn.addEventListener('click', () => close(false));
     okBtn.addEventListener('click', () => close(true));
-    card.querySelector('.modal-close')!.addEventListener('click', () => close(false));
+    querySelectorRequired<HTMLButtonElement>(card, '.modal-close').addEventListener('click', () => close(false));
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) close(false);
     });
@@ -104,7 +105,7 @@ export function showPrompt(message: string, defaultValue: string = '', title: st
 
     cancelBtn.addEventListener('click', () => close(null));
     okBtn.addEventListener('click', () => close(input.value));
-    card.querySelector('.modal-close')!.addEventListener('click', () => close(null));
+    querySelectorRequired<HTMLButtonElement>(card, '.modal-close').addEventListener('click', () => close(null));
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) close(null);
     });

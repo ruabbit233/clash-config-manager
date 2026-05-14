@@ -27,8 +27,12 @@ export class ApiClient {
       headers.set('Authorization', `Bearer ${token}`);
     }
 
-    const res = await fetch(`${this.baseUrl}${path}`, { ...options, headers });
-    
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      ...options,
+      headers,
+      credentials: 'same-origin',
+    });
+
     if (!res.ok) {
       if (res.status === 401) {
         handleAuthError();
@@ -54,6 +58,10 @@ export class ApiClient {
       method: 'POST',
       body: JSON.stringify({ password })
     });
+  }
+
+  async logout(): Promise<void> {
+    await this.fetch<void>('/api/auth/logout', { method: 'POST' });
   }
 
   async verifyToken(token: string): Promise<{ valid: boolean; expiresAt: string }> {

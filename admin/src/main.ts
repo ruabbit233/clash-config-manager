@@ -7,8 +7,9 @@ import { renderVersions } from './versions';
 import { renderHeaders } from './headers';
 import { t } from './i18n';
 import { iconShield, iconCode, iconClock, iconList, iconLogout, iconMenu } from './icons';
+import { getElementById } from './dom';
 
-const app = document.getElementById('app')!;
+const app = getElementById<HTMLDivElement>('app');
 const api = new ApiClient('', getToken);
 
 const layout = `
@@ -52,15 +53,20 @@ const layout = `
 
 app.innerHTML = layout;
 
-const mainContent = document.getElementById('main-content')!;
-const sidebar = document.getElementById('sidebar')!;
-const headerTitle = document.getElementById('header-title')!;
-const logoutBtn = document.getElementById('logout-btn')!;
-const mobileMenuBtn = document.getElementById('mobile-menu-btn')!;
+const mainContent = getElementById<HTMLElement>('main-content');
+const sidebar = getElementById<HTMLElement>('sidebar');
+const headerTitle = getElementById<HTMLElement>('header-title');
+const logoutBtn = getElementById<HTMLButtonElement>('logout-btn');
+const mobileMenuBtn = getElementById<HTMLButtonElement>('mobile-menu-btn');
 
 let backdrop: HTMLDivElement | null = null;
 
-logoutBtn.addEventListener('click', () => {
+logoutBtn.addEventListener('click', async () => {
+  try {
+    await api.logout();
+  } catch {
+    clearToken();
+  }
   clearToken();
   window.location.hash = '#/login';
 });
@@ -111,14 +117,14 @@ function router() {
 
   if (hash === '#/login') {
     sidebar.style.display = 'none';
-    const header = document.getElementById('app-header')!;
+    const header = getElementById<HTMLElement>('app-header');
     header.style.display = 'none';
     renderLogin(mainContent, api);
     return;
   }
 
   sidebar.style.display = '';
-  const header = document.getElementById('app-header')!;
+  const header = getElementById<HTMLElement>('app-header');
   header.style.display = '';
 
   if (hash === '#/editor' || hash === '#/') {
