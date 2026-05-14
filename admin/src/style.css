@@ -465,7 +465,7 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 0.15s var(--transition);
+  animation: fadeIn 0.15s cubic-bezier(0.645, 0.045, 0.355, 1);
 }
 
 .modal-card {
