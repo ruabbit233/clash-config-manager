@@ -111,7 +111,7 @@ export function showPrompt(message: string, defaultValue: string = '', title: st
     });
 
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') close(input.value);
+      if (e.key === 'Enter' && !e.isComposing) close(input.value);
     });
 
     const onEscape = (e: KeyboardEvent) => {

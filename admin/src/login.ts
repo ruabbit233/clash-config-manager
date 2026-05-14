@@ -54,6 +54,6 @@ export function renderLogin(container: HTMLElement, api: ApiClient): void {
   });
   
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') btn.click();
+    if (e.key === 'Enter' && !e.isComposing) btn.click();
   });
 }
