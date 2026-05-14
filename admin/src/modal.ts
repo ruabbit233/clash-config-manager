@@ -15,7 +15,7 @@ function createCard(title: string): { card: HTMLDivElement; body: HTMLDivElement
   card.innerHTML = `
     <div class="modal-header">
       <span class="modal-title">${title}</span>
-      <button class="modal-close btn-icon">${iconX}</button>
+      <button class="modal-close btn-icon" aria-label="${t.modal.close}">${iconX}</button>
     </div>
     <div class="modal-body"></div>
     <div class="modal-footer"></div>

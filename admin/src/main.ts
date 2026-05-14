@@ -40,13 +40,13 @@ const layout = `
     </div>
   </aside>
   <div class="app-main">
-    <header class="app-header" id="app-header">
-      <div class="header-left">
-        <button class="mobile-menu-btn" id="mobile-menu-btn">${iconMenu}</button>
-        <span class="header-title" id="header-title"></span>
-      </div>
-      <div class="header-actions" id="header-actions"></div>
-    </header>
+  <header class="app-header" id="app-header">
+    <div class="header-left">
+      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="${t.app.openMenu}" aria-expanded="false">${iconMenu}</button>
+      <span class="header-title" id="header-title"></span>
+    </div>
+    <div class="header-actions" id="header-actions"></div>
+  </header>
     <main class="app-content" id="main-content"></main>
   </div>
 `;
@@ -72,8 +72,10 @@ logoutBtn.addEventListener('click', async () => {
 });
 
 mobileMenuBtn.addEventListener('click', () => {
-  sidebar.classList.toggle('sidebar-open');
-  if (sidebar.classList.contains('sidebar-open')) {
+  const isOpen = sidebar.classList.toggle('sidebar-open');
+  mobileMenuBtn.setAttribute('aria-expanded', String(isOpen));
+  mobileMenuBtn.setAttribute('aria-label', isOpen ? t.app.closeMenu : t.app.openMenu);
+  if (isOpen) {
     backdrop = document.createElement('div');
     backdrop.className = 'sidebar-backdrop';
     backdrop.addEventListener('click', closeSidebar);
@@ -85,6 +87,8 @@ mobileMenuBtn.addEventListener('click', () => {
 
 function closeSidebar() {
   sidebar.classList.remove('sidebar-open');
+  mobileMenuBtn.setAttribute('aria-expanded', 'false');
+  mobileMenuBtn.setAttribute('aria-label', t.app.openMenu);
   if (backdrop) {
     backdrop.remove();
     backdrop = null;

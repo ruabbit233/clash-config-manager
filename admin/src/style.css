@@ -248,6 +248,11 @@ a { color: inherit; text-decoration: none; }
 
 .btn:active { transform: scale(0.97); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-glow);
+  border-color: var(--accent);
+}
 
 .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
 
@@ -303,6 +308,12 @@ input::placeholder, select::placeholder, textarea::placeholder {
 }
 
 input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-glow);
 }
@@ -448,6 +459,11 @@ select {
 .modal-close:hover {
   background-color: var(--bg-tertiary);
   color: var(--text-primary);
+}
+
+.modal-close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .modal-close svg { width: 14px; height: 14px; }
@@ -596,6 +612,11 @@ select {
   gap: 16px;
 }
 
+.login-form .form-label {
+  margin-bottom: -8px;
+  color: var(--text-secondary);
+}
+
 .login-input {
   width: 100%;
   height: 40px;
@@ -708,6 +729,10 @@ select {
 .headers-toolbar {
   display: flex;
   gap: 8px;
+}
+
+.headers-toolbar {
+  flex-wrap: wrap;
 }
 
 .headers-card {

@@ -41,6 +41,7 @@ export function renderHeaders(container: HTMLElement, api: ApiClient): void {
     delBtn.type = 'button';
     delBtn.className = 'h-del';
     delBtn.innerHTML = iconTrash;
+    delBtn.setAttribute('aria-label', t.headers.deleteRow);
 
     const errSpan = document.createElement('span');
     errSpan.className = 'h-err';

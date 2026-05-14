@@ -2,6 +2,8 @@ export const t = {
   app: {
     title: 'Clash Config Manager',
     logout: '退出登录',
+    openMenu: '打开菜单',
+    closeMenu: '关闭菜单',
   },
   nav: {
     editor: '编辑器',
@@ -12,6 +14,7 @@ export const t = {
     title: '登录',
     subtitle: 'Clash Config Manager',
     passwordPlaceholder: '请输入密码',
+    passwordLabel: '密码',
     submit: '登录',
     loading: '登录中...',
     emptyPassword: '请输入密码',
@@ -54,11 +57,13 @@ export const t = {
     invalidFormat: '格式不正确',
     fixInvalid: '请修正无效的响应头名称',
     saved: '响应头已保存',
+    deleteRow: '删除响应头',
   },
   modal: {
     confirm: '确认',
     cancel: '取消',
     ok: '确定',
+    close: '关闭弹窗',
   },
   auth: {
     failed: '认证失败',
