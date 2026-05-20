@@ -3,48 +3,84 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  gap: var(--space-3);
 }
 
 .editor-toolbar {
   display: flex;
-  gap: 8px;
-  padding: 12px 0;
+  gap: var(--space-2);
+  padding: 0;
   align-items: center;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 12px;
   flex-wrap: wrap;
 }
 
-.editor-status {
-  margin-left: auto;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-secondary);
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.editor-toolbar .btn {
   flex-shrink: 0;
-}
-
-.status-dot.valid {
-  background-color: var(--success);
-}
-.status-dot.invalid {
-  background-color: var(--error);
 }
 
 .cm-editor {
   flex: 1;
   border-radius: var(--radius);
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-secondary);
+  background-color: var(--bg-secondary);
+  box-shadow: var(--shadow-xs);
+  transition: border-color var(--transition-fast);
 }
 
-.cm-editor .cm-focused {
+.cm-editor.cm-focused {
+  border-color: var(--accent);
   outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.cm-editor .cm-scroller {
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+}
+
+.cm-editor .cm-gutters {
+  background-color: var(--bg-tertiary);
+  border-right: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.cm-editor .cm-activeLineGutter,
+.cm-editor .cm-activeLine {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.cm-editor .cm-lineNumbers .cm-gutterElement {
+  padding: 0 var(--space-3) 0 var(--space-2);
+}
+
+.cm-editor .cm-lint-marker-error {
+  color: var(--error);
+}
+
+.cm-editor .cm-tooltip {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  color: var(--text-primary);
+}
+
+.cm-editor .cm-tooltip-lint {
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  max-width: 480px;
+}
+
+.cm-editor .cm-diagnostic-error {
+  border-left-color: var(--error);
+}
+
+.cm-editor .cm-lintRange-error {
+  background-image: none;
+  background-color: var(--error-bg-strong);
+  border-bottom: 2px wavy var(--error);
 }

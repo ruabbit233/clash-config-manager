@@ -2,15 +2,12 @@
 .headers-page {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .headers-toolbar {
   display: flex;
-  gap: 8px;
-}
-
-.headers-toolbar {
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 
@@ -18,14 +15,15 @@
   background-color: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: var(--space-2) var(--space-5);
+  box-shadow: var(--shadow-xs);
 }
 
 .header-row {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   align-items: center;
-  padding: 8px 0;
+  padding: var(--space-3) 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -37,43 +35,55 @@
   width: 240px;
   min-width: 160px;
   flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
 }
 
 .h-val {
   flex: 1;
+  min-width: 0;
 }
 
 .h-del {
-  width: 24px;
-  height: 24px;
+  width: 34px;
+  height: 34px;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: none;
+  background: transparent;
   border: 1px solid var(--border-secondary);
   color: var(--text-secondary);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: all var(--transition);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
   flex-shrink: 0;
 }
 
 .h-del:hover {
   color: var(--error);
-  border-color: var(--error);
+  border-color: var(--error-border);
   background-color: var(--error-bg);
 }
 
+.h-del:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
 .h-del svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
 }
 
 .h-err {
   color: var(--error);
-  font-size: 12px;
-  margin-left: 4px;
+  font-size: var(--text-xs);
+  margin-left: var(--space-1);
   display: none;
   white-space: nowrap;
+  font-weight: var(--weight-medium);
 }

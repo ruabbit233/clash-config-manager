@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@codemirror/lang-yaml": "^6.1.1",
+    "@codemirror/lint": "^6.9.5",
     "@codemirror/state": "^6.6.0",
     "@codemirror/theme-one-dark": "^6.1.2",
     "@codemirror/view": "^6.41.1",

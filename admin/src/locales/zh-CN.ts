@@ -26,7 +26,11 @@ const locale = {
     reset: '重置',
     download: '下载',
     validYaml: 'YAML 格式正确',
-    invalidYaml: 'YAML 格式错误：',
+    invalidYaml: 'YAML 格式错误',
+    issuesFound: ({ count }: { count: number }) => `发现 ${count} 个 YAML 错误`,
+    moreIssuesHint: ({ count }: { count: number }) => `还有 ${count} 个错误未显示`,
+    jumpToLocation: ({ line, column }: { line: number; column: number }) =>
+      `第 ${line} 行 第 ${column} 列`,
     draftRestore: '发现未保存的草稿，是否恢复？',
     invalidSaveConfirm: 'YAML 格式不正确，仍然保存？',
     versionMessagePrompt: '请输入版本备注（可选）：',

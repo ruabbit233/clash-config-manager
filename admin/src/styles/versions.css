@@ -2,25 +2,26 @@
 .versions-page {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .diff-section {
   background-color: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 16px 20px;
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-xs);
 }
 
 .diff-selects {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   align-items: center;
   flex-wrap: wrap;
 }
 
 .diff-select {
-  min-width: 200px;
+  min-width: 220px;
 }
 
 .versions-section {
@@ -28,14 +29,23 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  box-shadow: var(--shadow-xs);
+}
+
+.versions-section .card {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .load-more-wrapper {
   text-align: center;
-  padding: 12px;
+  padding: var(--space-3);
+  border-top: 1px solid var(--border);
 }
 
 .version-actions {
-  display: flex;
-  gap: 6px;
+  display: inline-flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
 }

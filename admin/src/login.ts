@@ -19,7 +19,7 @@ export function createLoginPage(): Page {
         <div class="login-form">
           <label class="form-label" for="login-password">${t.login.passwordLabel}</label>
           <input type="password" id="login-password" class="login-input" placeholder="${t.login.passwordPlaceholder}" autocomplete="current-password" />
-          <button id="login-btn" class="login-btn">${t.login.submit}</button>
+          <button id="login-btn" class="btn btn-primary login-btn">${t.login.submit}</button>
         </div>
         <div id="login-error" class="login-error"></div>
       </div>
