@@ -149,6 +149,24 @@
     align-items: flex-start;
     gap: var(--space-1);
   }
+
+  .yaml-search-panel {
+    width: 100%;
+  }
+
+  .cm-editor .cm-panels.cm-panels-top {
+    left: var(--space-2);
+    right: var(--space-2);
+    max-width: none;
+  }
+
+  .yaml-search-row {
+    flex-wrap: wrap;
+  }
+
+  .yaml-search-field {
+    flex-basis: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

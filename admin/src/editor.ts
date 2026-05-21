@@ -5,12 +5,14 @@ import { EditorView, basicSetup } from 'codemirror'
 import { yaml } from '@codemirror/lang-yaml'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { linter, lintGutter, type Diagnostic } from '@codemirror/lint'
+import { search } from '@codemirror/search'
 import { showToast } from './toast'
 import { t } from './i18n'
 import { showConfirm, showPrompt } from './modal'
 import { iconSave, iconRefresh, iconDownload, iconCheck, iconAlert } from './icons'
 import { getElementById } from './dom'
 import { getYamlDiagnostics, toCodeMirrorDiagnostics, type YamlIssue } from './yamlDiagnostics'
+import { createYamlSearchPanel } from './searchPanel'
 import type { Page } from './page'
 
 const MAX_BANNER_ISSUES = 5
@@ -138,7 +140,15 @@ export function createEditorPage(onSaved?: () => void): Page {
         activeView = new EditorView({
           state: EditorState.create({
             doc: content,
-            extensions: [basicSetup, yaml(), oneDark, lintGutter(), yamlLinter, updateListener],
+            extensions: [
+              basicSetup,
+              search({ top: true, createPanel: createYamlSearchPanel }),
+              yaml(),
+              oneDark,
+              lintGutter(),
+              yamlLinter,
+              updateListener,
+            ],
           }),
           parent: wrapper,
         })

@@ -31,3 +31,19 @@ export const iconX = `<svg viewBox="0 0 20 20" fill="none" ${s}><path d="M6 6l8 
 export const iconAlert = `<svg viewBox="0 0 20 20" fill="none" ${s}><circle cx="10" cy="10" r="7"/><path d="M10 7v3M10 13h.01"/></svg>`
 
 export const iconEdit = `<svg viewBox="0 0 20 20" fill="none" ${s}><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.829-2.828z"/></svg>`
+
+export const iconSearch = `<svg viewBox="0 0 20 20" fill="none" ${s}><circle cx="9" cy="9" r="5.5"/><path d="M13 13l4 4"/></svg>`
+
+export const iconArrowUp = `<svg viewBox="0 0 20 20" fill="none" ${s}><path d="M10 16V4M5 9l5-5 5 5"/></svg>`
+
+export const iconArrowDown = `<svg viewBox="0 0 20 20" fill="none" ${s}><path d="M10 4v12M5 11l5 5 5-5"/></svg>`
+
+export const iconReplace = `<svg viewBox="0 0 20 20" fill="none" ${s}><path d="M4 7h8a3 3 0 010 6H8M7 4L4 7l3 3"/><path d="M16 13l-3 3-3-3"/></svg>`
+
+export const iconReplaceAll = `<svg viewBox="0 0 20 20" fill="none" ${s}><path d="M4 6h6a2.5 2.5 0 010 5H6m1-3L4 6l3-2"/><path d="M16 11l-2 2-2-2M14 7v6"/><path d="M9 17h7"/></svg>`
+
+export const iconCaseSensitive = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14l2.5-7 2.5 7M4 12h3"/><path d="M11 11.2c0-.9.7-1.6 1.6-1.6h1.2a1.6 1.6 0 011.6 1.6V14h-2.6a1.4 1.4 0 010-2.8h2.6"/></svg>`
+
+export const iconWholeWord = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7v6M18 7v6"/><path d="M5 13l1.5-5L8 13M5.6 11.5h1.8"/><path d="M10 6.5v6.5h2a1.6 1.6 0 100-3.2H10m2 0a1.4 1.4 0 100-2.8H10"/></svg>`
+
+export const iconRegex = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4v6M10.4 5l5.2 4M10.4 9l5.2-4"/><circle cx="6" cy="14" r="1.2" fill="currentColor" stroke="none"/></svg>`
