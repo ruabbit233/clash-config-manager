@@ -1,6 +1,12 @@
 import { Hono } from 'hono'
 import { safeParseJson } from '../utils/response'
-import { getVersion, listVersions, saveVersion, updateVersionMessage } from '../storage'
+import {
+  deleteVersion,
+  getVersion,
+  listVersions,
+  saveVersion,
+  updateVersionMessage,
+} from '../storage'
 import { STORAGE_CONFIG } from '../types'
 import type { Env } from '../types'
 
@@ -66,4 +72,16 @@ versionRoutes.patch('/:id', async (c) => {
     createdAt: updated.createdAt,
     contentHash: updated.contentHash,
   })
+})
+
+versionRoutes.delete('/:id', async (c) => {
+  const id = c.req.param('id')
+  const result = await deleteVersion(c.env.KV, id)
+  if (result.ok) {
+    return c.body(null, 204)
+  }
+  if (result.reason === 'not_found') {
+    return c.json({ error: 'Version not found' }, 404)
+  }
+  return c.json({ error: 'Cannot delete the current version' }, 409)
 })

@@ -116,6 +116,8 @@ routes = [
 | PUT | /api/config | 是 | `{ content, message? }` | `{ versionId, contentHash, createdAt }` |
 | GET | /api/versions?limit&cursor | 是 | — | `{ keys: [...], cursor? }` |
 | GET | /api/versions/:id | 是 | — | `{ id, content, message, createdAt, contentHash }` |
+| PATCH | /api/versions/:id | 是 | `{ message }` | `{ id, message, createdAt, contentHash }` |
+| DELETE | /api/versions/:id | 是 | — | `204 No Content`（若为当前版本则返回 `409`） |
 | POST | /api/versions/:id/rollback | 是 | — | `{ versionId, contentHash, createdAt }` |
 | GET | /api/headers | 是 | — | `{ "Header-Name": "value" }` |
 | PUT | /api/headers | 是 | `{ "Header-Name": "value" }` | `{ ...headers }` |
@@ -141,7 +143,7 @@ clash-config-manager/
 │   ├── routes/
 │   │   ├── auth.ts            # /api/auth/* 路由（登录、验证、登出）
 │   │   ├── config.ts          # /api/config 路由（GET、PUT）
-│   │   ├── versions.ts        # /api/versions/* 路由（列表、获取、回滚、更新备注）
+│   │   ├── versions.ts        # /api/versions/* 路由（列表、获取、回滚、更新备注、删除）
 │   │   ├── headers.ts         # /api/headers 路由（GET、PUT）
 │   │   └── public.ts          # GET / 和 /download 公开端点
 │   ├── middleware/

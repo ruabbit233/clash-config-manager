@@ -173,6 +173,30 @@ export const setHeaders = async (kv: KVNamespace, headers: HeadersConfig): Promi
   await kv.put(HEADERS_KEY, JSON.stringify(headers))
 }
 
+export type DeleteVersionResult =
+  | { ok: true }
+  | { ok: false; reason: 'not_found' | 'is_current' }
+
+export const deleteVersion = async (
+  kv: KVNamespace,
+  versionId: string,
+): Promise<DeleteVersionResult> => {
+  const key = `${VERSION_PREFIX}${versionId}`
+
+  const snapshot = await kv.get<VersionSnapshot>(key, 'json')
+  if (!snapshot) {
+    return { ok: false, reason: 'not_found' }
+  }
+
+  const pointer = await kv.get<CurrentPointer>(CURRENT_KEY, 'json')
+  if (pointer && pointer.versionId === versionId) {
+    return { ok: false, reason: 'is_current' }
+  }
+
+  await kv.delete(key)
+  return { ok: true }
+}
+
 export const updateVersionMessage = async (
   kv: KVNamespace,
   versionId: string,

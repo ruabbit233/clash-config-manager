@@ -104,6 +104,8 @@ Or configure via Cloudflare Dashboard → Workers → your worker → Settings �
 | PUT | /api/config | Yes | `{ content, message? }` | `{ versionId, contentHash, createdAt }` |
 | GET | /api/versions?limit&cursor | Yes | — | `{ keys: [...], cursor? }` |
 | GET | /api/versions/:id | Yes | — | `{ id, content, message, createdAt, contentHash }` |
+| PATCH | /api/versions/:id | Yes | `{ message }` | `{ id, message, createdAt, contentHash }` |
+| DELETE | /api/versions/:id | Yes | — | `204 No Content` (`409` if it is the current version) |
 | POST | /api/versions/:id/rollback | Yes | — | `{ versionId, contentHash, createdAt }` |
 | GET | /api/headers | Yes | — | `{ "Header-Name": "value" }` |
 | PUT | /api/headers | Yes | `{ "Header-Name": "value" }` | `{ ...headers }` |
@@ -129,7 +131,7 @@ clash-config-manager/
 │   ├── routes/
 │   │   ├── auth.ts            # /api/auth/* routes (login, verify, logout)
 │   │   ├── config.ts          # /api/config routes (GET, PUT)
-│   │   ├── versions.ts        # /api/versions/* routes (list, get, rollback, patch)
+│   │   ├── versions.ts        # /api/versions/* routes (list, get, rollback, patch, delete)
 │   │   ├── headers.ts         # /api/headers routes (GET, PUT)
 │   │   └── public.ts          # GET / and /download public endpoints
 │   ├── middleware/

@@ -6,6 +6,7 @@ import {
   getCurrent,
   getHeaders,
   setHeaders,
+  deleteVersion,
 } from './storage'
 
 function createMockKv(): {
@@ -193,6 +194,49 @@ describe('storage', () => {
       await setHeaders(kv, { 'X-New': 'new' })
       const result = await getHeaders(kv)
       expect(result).toEqual({ 'X-New': 'new' })
+    })
+  })
+
+  describe('deleteVersion', () => {
+    it('should return not_found for non-existent version', async () => {
+      const result = await deleteVersion(kv, 'nonexistent')
+      expect(result).toEqual({ ok: false, reason: 'not_found' })
+    })
+
+    it('should refuse to delete the current version', async () => {
+      await saveVersion(kv, 'first', 'v1')
+      const v2 = await saveVersion(kv, 'second', 'v2')
+      const result = await deleteVersion(kv, v2.id)
+      expect(result).toEqual({ ok: false, reason: 'is_current' })
+      expect(store.has(`version:${v2.id}`)).toBe(true)
+    })
+
+    it('should delete a non-current version and remove its KV key', async () => {
+      const v1 = await saveVersion(kv, 'first', 'v1')
+      await saveVersion(kv, 'second', 'v2')
+      const result = await deleteVersion(kv, v1.id)
+      expect(result).toEqual({ ok: true })
+      expect(store.has(`version:${v1.id}`)).toBe(false)
+    })
+
+    it('should not appear in listVersions after deletion', async () => {
+      const v1 = await saveVersion(kv, 'first', 'v1')
+      await saveVersion(kv, 'second', 'v2')
+      await saveVersion(kv, 'third', 'v3')
+      await deleteVersion(kv, v1.id)
+      const result = await listVersions(kv)
+      expect(result.keys).toHaveLength(2)
+      expect(result.keys.map((k) => k.id)).not.toContain(v1.id)
+    })
+
+    it('should not affect the current pointer after deleting other version', async () => {
+      const v1 = await saveVersion(kv, 'first', 'v1')
+      const v2 = await saveVersion(kv, 'second', 'v2')
+      await deleteVersion(kv, v1.id)
+      const current = await getCurrent(kv)
+      expect(current).not.toBeNull()
+      expect(current!.content).toBe('second')
+      void v2
     })
   })
 })

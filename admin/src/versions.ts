@@ -3,7 +3,7 @@ import { showToast } from './toast'
 import * as Diff from 'diff'
 import { t } from './i18n'
 import { showConfirm, showPrompt } from './modal'
-import { iconCompare, iconEdit } from './icons'
+import { iconCompare, iconEdit, iconTrash } from './icons'
 import { getElementById } from './dom'
 import type { Page } from './page'
 
@@ -104,8 +104,15 @@ export function createVersionsPage(): Page {
             btn.className = 'btn btn-secondary btn-sm rollback-btn'
             btn.setAttribute('data-id', v.id)
             btn.textContent = t.versions.rollback
+
+            const deleteBtn = document.createElement('button')
+            deleteBtn.className = 'btn btn-danger btn-sm delete-version-btn'
+            deleteBtn.setAttribute('data-id', v.id)
+            deleteBtn.innerHTML = `${iconTrash} ${t.versions.delete}`
+
             tdAction.appendChild(editBtn)
             tdAction.appendChild(btn)
+            tdAction.appendChild(deleteBtn)
 
             tr.appendChild(tdDate)
             tr.appendChild(tdMessage)
@@ -146,6 +153,19 @@ export function createVersionsPage(): Page {
                   tdMessage.textContent = newMsg || '-'
                   v.message = newMsg
                   showToast(t.versions.editMessageSuccess, 'success')
+                } catch (err: unknown) {
+                  showToast(err instanceof Error ? err.message : String(err), 'error')
+                }
+              }
+            })
+
+            deleteBtn.addEventListener('click', async () => {
+              const id = deleteBtn.getAttribute('data-id')!
+              if (await showConfirm(t.versions.deleteConfirm({ id: id.substring(0, 8) }))) {
+                try {
+                  await api.deleteVersion(id)
+                  showToast(t.versions.deleteSuccess, 'success')
+                  loadVersions(true)
                 } catch (err: unknown) {
                   showToast(err instanceof Error ? err.message : String(err), 'error')
                 }

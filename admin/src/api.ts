@@ -125,6 +125,10 @@ export class ApiClient {
     })
   }
 
+  async deleteVersion(id: string): Promise<void> {
+    await this.fetch<void>(`/api/versions/${id}`, { method: 'DELETE' })
+  }
+
   async getHeaders(): Promise<HeadersConfig> {
     return this.fetch<HeadersConfig>('/api/headers')
   }
