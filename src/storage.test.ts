@@ -122,12 +122,57 @@ describe('storage', () => {
     })
 
     it('should list saved versions sorted by id descending', async () => {
-      await saveVersion(kv, 'first', 'v1')
-      await saveVersion(kv, 'second', 'v2')
-      await saveVersion(kv, 'third', 'v3')
+      const v1 = await saveVersion(kv, 'first', 'v1')
+      const v2 = await saveVersion(kv, 'second', 'v2')
+      const v3 = await saveVersion(kv, 'third', 'v3')
       const result = await listVersions(kv)
       expect(result.keys).toHaveLength(3)
-      expect(result.keys[0].contentHash).toBeTruthy()
+
+      const expectedDescIds = [v1.id, v2.id, v3.id].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
+      expect(result.keys.map((k) => k.id)).toEqual(expectedDescIds)
+    })
+
+    it('should return globally newest-first across paginated calls', async () => {
+      const saved = []
+      for (let i = 0; i < 25; i += 1) {
+        saved.push(await saveVersion(kv, `content-${i}`, `v${i}`))
+      }
+
+      const expectedDescIds = saved.map((s) => s.id).sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
+
+      const page1 = await listVersions(kv, 10)
+      expect(page1.keys).toHaveLength(10)
+      expect(page1.keys.map((k) => k.id)).toEqual(expectedDescIds.slice(0, 10))
+      expect(page1.cursor).toBeDefined()
+
+      const page2 = await listVersions(kv, 10, page1.cursor)
+      expect(page2.keys).toHaveLength(10)
+      expect(page2.keys.map((k) => k.id)).toEqual(expectedDescIds.slice(10, 20))
+      expect(page2.cursor).toBeDefined()
+
+      const page3 = await listVersions(kv, 10, page2.cursor)
+      expect(page3.keys).toHaveLength(5)
+      expect(page3.keys.map((k) => k.id)).toEqual(expectedDescIds.slice(20, 25))
+      expect(page3.cursor).toBeUndefined()
+    })
+
+    it('should not duplicate or skip items across pages', async () => {
+      for (let i = 0; i < 15; i += 1) {
+        await saveVersion(kv, `content-${i}`, `v${i}`)
+      }
+
+      const collected: string[] = []
+      let cursor: string | undefined
+      do {
+        const res = await listVersions(kv, 4, cursor)
+        for (const item of res.keys) collected.push(item.id)
+        cursor = res.cursor
+      } while (cursor)
+
+      expect(collected).toHaveLength(15)
+      expect(new Set(collected).size).toBe(15)
+      const sortedDesc = [...collected].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
+      expect(collected).toEqual(sortedDesc)
     })
   })
 

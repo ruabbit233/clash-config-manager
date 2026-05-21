@@ -94,15 +94,35 @@ export const listVersions = async (
   limit: number = STORAGE_CONFIG.DEFAULT_PAGE_LIMIT,
   cursor?: string,
 ): Promise<{ keys: VersionListItem[]; cursor?: string }> => {
-  const result = await kv.list({
-    prefix: VERSION_PREFIX,
-    limit,
-    cursor,
-  })
+  // KV.list() returns keys in lexicographic ASCENDING order with no reverse
+  // option, so we cannot rely on its cursor for newest-first pagination.
+  // Collect all keys (keys only — cheap), sort globally, then page in memory.
+  // The exposed `cursor` is a numeric offset string into the sorted list.
+  const allKeyNames: string[] = []
+  let kvCursor: string | undefined
+  while (true) {
+    const page = await kv.list({
+      prefix: VERSION_PREFIX,
+      cursor: kvCursor,
+    })
+    for (const key of page.keys) {
+      allKeyNames.push(key.name)
+    }
+    if (page.list_complete) break
+    if (!page.cursor || page.cursor === kvCursor) break
+    kvCursor = page.cursor
+  }
+
+  // ULID's first 10 chars encode a ms timestamp in Crockford-Base32, so
+  // descending lexicographic order matches descending creation time.
+  allKeyNames.sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
+
+  const offset = cursor ? Math.max(0, Number.parseInt(cursor, 10) || 0) : 0
+  const pageSlice = allKeyNames.slice(offset, offset + limit)
 
   const snapshots = await Promise.all(
-    result.keys.map(async (key) => {
-      const id = key.name.slice(VERSION_PREFIX.length)
+    pageSlice.map(async (name) => {
+      const id = name.slice(VERSION_PREFIX.length)
       return getVersion(kv, id)
     }),
   )
@@ -115,11 +135,13 @@ export const listVersions = async (
       message: item.message,
       contentHash: item.contentHash,
     }))
-    .sort((a, b) => b.id.localeCompare(a.id))
+
+  const nextOffset = offset + pageSlice.length
+  const hasMore = nextOffset < allKeyNames.length
 
   return {
     keys,
-    cursor: result.list_complete ? undefined : result.cursor,
+    cursor: hasMore ? String(nextOffset) : undefined,
   }
 }
 
