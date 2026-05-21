@@ -32,6 +32,8 @@ export const iconAlert = `<svg viewBox="0 0 20 20" fill="none" ${s}><circle cx="
 
 export const iconEdit = `<svg viewBox="0 0 20 20" fill="none" ${s}><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.829-2.828z"/></svg>`
 
+export const iconEye = `<svg viewBox="0 0 20 20" fill="none" ${s}><path d="M2 10s2.5-5 8-5 8 5 8 5-2.5 5-8 5-8-5-8-5z"/><circle cx="10" cy="10" r="2.5"/></svg>`
+
 export const iconSearch = `<svg viewBox="0 0 20 20" fill="none" ${s}><circle cx="9" cy="9" r="5.5"/><path d="M13 13l4 4"/></svg>`
 
 export const iconArrowUp = `<svg viewBox="0 0 20 20" fill="none" ${s}><path d="M10 16V4M5 9l5-5 5 5"/></svg>`

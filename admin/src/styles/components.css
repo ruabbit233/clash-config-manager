@@ -441,6 +441,84 @@ select {
   animation: modalEnter var(--duration-base) var(--ease-spring);
 }
 
+.modal-card-lg {
+  max-width: min(960px, 96vw);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.modal-card-lg .modal-body-pane {
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-tabs {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-5) 0;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--bg-secondary);
+}
+
+.modal-tab {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  font-family: inherit;
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.modal-tab:hover {
+  color: var(--text-primary);
+}
+
+.modal-tab.is-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.modal-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius);
+}
+
+.preview-pane {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: var(--space-4) var(--space-5);
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  white-space: pre-wrap;
+  word-break: break-all;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.preview-notice {
+  font-family: inherit;
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+  text-align: center;
+  padding: var(--space-6) var(--space-4);
+  font-style: italic;
+}
+
 .modal-header {
   display: flex;
   align-items: center;

@@ -173,9 +173,7 @@ export const setHeaders = async (kv: KVNamespace, headers: HeadersConfig): Promi
   await kv.put(HEADERS_KEY, JSON.stringify(headers))
 }
 
-export type DeleteVersionResult =
-  | { ok: true }
-  | { ok: false; reason: 'not_found' | 'is_current' }
+export type DeleteVersionResult = { ok: true } | { ok: false; reason: 'not_found' | 'is_current' }
 
 export const deleteVersion = async (
   kv: KVNamespace,

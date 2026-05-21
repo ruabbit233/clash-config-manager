@@ -2,8 +2,8 @@ import { ApiClient } from './api'
 import { showToast } from './toast'
 import * as Diff from 'diff'
 import { t } from './i18n'
-import { showConfirm, showPrompt } from './modal'
-import { iconCompare, iconEdit, iconTrash } from './icons'
+import { showConfirm, showPrompt, showVersionPreview } from './modal'
+import { iconCompare, iconEdit, iconEye, iconTrash } from './icons'
 import { getElementById } from './dom'
 import type { Page } from './page'
 
@@ -100,6 +100,11 @@ export function createVersionsPage(): Page {
             editBtn.setAttribute('data-id', v.id)
             editBtn.innerHTML = `${iconEdit} ${t.versions.editMessage}`
 
+            const previewBtn = document.createElement('button')
+            previewBtn.className = 'btn btn-secondary btn-sm preview-btn'
+            previewBtn.setAttribute('data-id', v.id)
+            previewBtn.innerHTML = `${iconEye} ${t.versions.preview}`
+
             const btn = document.createElement('button')
             btn.className = 'btn btn-secondary btn-sm rollback-btn'
             btn.setAttribute('data-id', v.id)
@@ -111,6 +116,7 @@ export function createVersionsPage(): Page {
             deleteBtn.innerHTML = `${iconTrash} ${t.versions.delete}`
 
             tdAction.appendChild(editBtn)
+            tdAction.appendChild(previewBtn)
             tdAction.appendChild(btn)
             tdAction.appendChild(deleteBtn)
 
@@ -169,6 +175,56 @@ export function createVersionsPage(): Page {
                 } catch (err: unknown) {
                   showToast(err instanceof Error ? err.message : String(err), 'error')
                 }
+              }
+            })
+
+            previewBtn.addEventListener('click', async () => {
+              const id = previewBtn.getAttribute('data-id')!
+              previewBtn.disabled = true
+              try {
+                const [snapshot, current] = await Promise.all([api.getVersion(id), api.getConfig()])
+                const isCurrent = current.versionId === id
+                const identicalToCurrent = !isCurrent && current.content === snapshot.content
+                const diffPatch =
+                  isCurrent || identicalToCurrent
+                    ? ''
+                    : Diff.createPatch(
+                        'config.yaml',
+                        current.content,
+                        snapshot.content,
+                        t.versions.previewLabelCurrent,
+                        t.versions.previewLabelSelected,
+                      )
+
+                const action = await showVersionPreview({
+                  title: t.versions.previewTitle({ id: id.substring(0, 8) }),
+                  originalContent: snapshot.content,
+                  diffPatch,
+                  isCurrent,
+                  identicalToCurrent,
+                  rollbackLabel: t.versions.rollback,
+                  closeLabel: t.versions.previewClose,
+                  contentTabLabel: t.versions.previewTabContent,
+                  diffTabLabel: t.versions.previewTabDiff,
+                  identicalNotice: t.versions.previewIdenticalToCurrent,
+                  isCurrentNotice: t.versions.previewIsCurrent,
+                })
+
+                if (action === 'rollback') {
+                  if (await showConfirm(t.versions.rollbackConfirm({ id: id.substring(0, 8) }))) {
+                    try {
+                      await api.rollbackVersion(id)
+                      showToast(t.versions.rollbackSuccess, 'success')
+                      loadVersions(true)
+                    } catch (err: unknown) {
+                      showToast(err instanceof Error ? err.message : String(err), 'error')
+                    }
+                  }
+                }
+              } catch (err: unknown) {
+                showToast(err instanceof Error ? err.message : String(err), 'error')
+              } finally {
+                previewBtn.disabled = false
               }
             })
           })
