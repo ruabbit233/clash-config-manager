@@ -1,18 +1,34 @@
 import { Hono } from 'hono'
 import { generateToken, verifyToken } from '../auth'
 import { safeParseJson, setAuthCookies } from '../utils/response'
+import {
+  checkRateLimit,
+  getClientIdentifier,
+  recordFailedAttempt,
+  timingSafeEqual,
+} from '../utils/security'
 import { AUTH_CONFIG } from '../types'
 import type { Env } from '../types'
 
 export const authRoutes = new Hono<{ Bindings: Env }>()
 
 authRoutes.post('/login', async (c) => {
+  const identifier = getClientIdentifier(c.req.raw.headers)
+  const limit = await checkRateLimit(c.env.KV, identifier)
+  if (!limit.allowed) {
+    return c.json({ error: 'Too many login attempts. Please try again later.' }, 429, {
+      'Retry-After': String(limit.retryAfterSeconds),
+    })
+  }
+
   const body = await safeParseJson<{ password?: string }>(c)
   if (!body || typeof body.password !== 'string') {
     return c.json({ error: 'Invalid request body' }, 400)
   }
 
-  if (body.password !== c.env.ADMIN_PASSWORD) {
+  const passwordOk = await timingSafeEqual(body.password, c.env.ADMIN_PASSWORD)
+  if (!passwordOk) {
+    await recordFailedAttempt(c.env.KV, identifier)
     return c.json({ error: 'Invalid credentials' }, 401)
   }
 
