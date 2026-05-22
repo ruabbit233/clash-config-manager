@@ -12,6 +12,14 @@ export const safeParseJson = async <T>(c: Context<{ Bindings: Env }>): Promise<T
   }
 }
 
+/**
+ * ETag uses versionId (immutable per save) instead of content-hash to avoid a
+ * second KV read. `If-None-Match` short-circuits to 304 before we touch storage,
+ * so high-frequency Clash polling hits the CDN cache.
+ *
+ * Custom headers are applied LAST so they may intentionally override defaults
+ * like Cache-Control (e.g. user wants `no-store`).
+ */
 export const createYamlResponse = async (
   c: Context<{ Bindings: Env }>,
   asDownload: boolean,
@@ -21,16 +29,34 @@ export const createYamlResponse = async (
     return c.text('No config found', 404, { 'Content-Type': 'text/plain' })
   }
 
+  const etag = `"${current.versionId}"`
+
+  if (!asDownload) {
+    const ifNoneMatch = c.req.header('If-None-Match')
+    if (ifNoneMatch && ifNoneMatch === etag) {
+      return new Response(null, {
+        status: 304,
+        headers: { ETag: etag, 'Cache-Control': 'public, max-age=60' },
+      })
+    }
+  }
+
   const headers = new Headers()
   headers.set('Content-Type', 'text/yaml; charset=utf-8')
 
-  const customHeaders = await getHeaders(c.env.KV)
-  for (const [name, value] of Object.entries(customHeaders)) {
-    headers.set(name, String(value))
+  if (!asDownload) {
+    headers.set('ETag', etag)
+    headers.set('Cache-Control', 'public, max-age=60')
+    headers.set('Last-Modified', new Date(current.updatedAt).toUTCString())
   }
 
   if (asDownload) {
     headers.set('Content-Disposition', `attachment; filename="${HEADER_CONFIG.DOWNLOAD_FILENAME}"`)
+  }
+
+  const customHeaders = await getHeaders(c.env.KV)
+  for (const [name, value] of Object.entries(customHeaders)) {
+    headers.set(name, String(value))
   }
 
   return new Response(current.content, {
