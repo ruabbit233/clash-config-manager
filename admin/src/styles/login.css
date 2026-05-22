@@ -1,9 +1,22 @@
 /* ===== Page: Login ===== */
+/* On the login route, `.app-content` is the only visible region (sidebar and
+   header are hidden). Strip its padding/background so the login gradient fills
+   edge-to-edge, otherwise `.app-content`'s 24px top padding renders as a dark
+   horizontal band above the login card. */
+.app-content.app-content--login {
+  padding: 0;
+  background: transparent;
+}
+
 .login-page {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100dvh;
+  /* Fill the parent (`.app-content`, which already spans the viewport via the
+     `#app` flex shell). Using 100dvh here would overflow `.app-content` and
+     introduce an internal scrollbar. */
+  min-height: 100%;
+  width: 100%;
   padding: var(--space-5);
   background:
     radial-gradient(ellipse 80% 50% at 50% -10%, rgba(59, 130, 246, 0.28), transparent 55%),

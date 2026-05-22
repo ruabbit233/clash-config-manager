@@ -136,6 +136,7 @@ function router() {
     sidebar.style.display = 'none'
     const header = getElementById<HTMLElement>('app-header')
     header.style.display = 'none'
+    mainContent.classList.add('app-content--login')
     currentPage?.unmount()
     const page = createLoginPage()
     page.mount(mainContent, api)
@@ -146,6 +147,7 @@ function router() {
   sidebar.style.display = ''
   const header = getElementById<HTMLElement>('app-header')
   header.style.display = ''
+  mainContent.classList.remove('app-content--login')
 
   if (hash === '#/editor' || hash === '#/') {
     updateNav('editor')
