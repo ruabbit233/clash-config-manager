@@ -1,7 +1,7 @@
 import { ApiClient } from './api'
 import { setToken, setExpiresAt } from './auth'
 import { t } from './i18n'
-import { iconShield } from './icons'
+import { iconShield, iconEye, iconEyeOff } from './icons'
 import { getElementById } from './dom'
 import type { Page } from './page'
 
@@ -18,7 +18,10 @@ export function createLoginPage(): Page {
         </div>
         <div class="login-form">
           <label class="form-label" for="login-password">${t.login.passwordLabel}</label>
-          <input type="password" id="login-password" class="login-input" placeholder="${t.login.passwordPlaceholder}" autocomplete="current-password" />
+          <div class="login-password-wrapper">
+            <input type="password" id="login-password" class="login-input" placeholder="${t.login.passwordPlaceholder}" autocomplete="current-password" autofocus />
+            <button type="button" id="login-toggle" class="login-toggle" aria-label="${t.login.showPassword}" aria-pressed="false">${iconEye}</button>
+          </div>
           <button id="login-btn" class="btn btn-primary login-btn">${t.login.submit}</button>
         </div>
         <div id="login-error" class="login-error"></div>
@@ -28,7 +31,19 @@ export function createLoginPage(): Page {
 
       const btn = getElementById<HTMLButtonElement>('login-btn')
       const input = getElementById<HTMLInputElement>('login-password')
+      const toggle = getElementById<HTMLButtonElement>('login-toggle')
       const err = getElementById<HTMLDivElement>('login-error')
+
+      input.focus()
+
+      toggle.addEventListener('click', () => {
+        const showing = input.type === 'text'
+        input.type = showing ? 'password' : 'text'
+        toggle.innerHTML = showing ? iconEye : iconEyeOff
+        toggle.setAttribute('aria-pressed', String(!showing))
+        toggle.setAttribute('aria-label', showing ? t.login.showPassword : t.login.hidePassword)
+        input.focus()
+      })
 
       btn.addEventListener('click', async () => {
         const password = input.value.trim()

@@ -1,6 +1,18 @@
 import { AuthError, handleAuthError } from './auth'
 import type { HeadersConfig, VersionListItem, VersionSnapshot } from '@shared/types'
 
+export class ApiError extends Error {
+  readonly status: number
+  readonly code?: string
+
+  constructor(message: string, status: number, code?: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.code = code
+  }
+}
+
 export interface LoginResponse {
   token: string
   expiresAt: string
@@ -54,13 +66,15 @@ export class ApiClient {
       }
       const errText = await res.text()
       let errMsg = res.statusText
+      let errCode: string | undefined
       try {
         const errJson = JSON.parse(errText)
         errMsg = errJson.error || errJson.message || errMsg
+        if (typeof errJson.code === 'string') errCode = errJson.code
       } catch {
         if (errText) errMsg = errText
       }
-      throw new Error(errMsg)
+      throw new ApiError(errMsg, res.status, errCode)
     }
 
     if (res.status === 204) return {} as T

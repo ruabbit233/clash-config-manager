@@ -1,4 +1,4 @@
-import { ApiClient } from './api'
+import { ApiClient, ApiError } from './api'
 import { showToast } from './toast'
 import * as Diff from 'diff'
 import { t } from './i18n'
@@ -173,7 +173,13 @@ export function createVersionsPage(): Page {
                   showToast(t.versions.deleteSuccess, 'success')
                   loadVersions(true)
                 } catch (err: unknown) {
-                  showToast(err instanceof Error ? err.message : String(err), 'error')
+                  const msg =
+                    err instanceof ApiError && err.code === 'is_current'
+                      ? t.versions.deleteCurrentForbidden
+                      : err instanceof Error
+                        ? err.message
+                        : String(err)
+                  showToast(msg, 'error')
                 }
               }
             })

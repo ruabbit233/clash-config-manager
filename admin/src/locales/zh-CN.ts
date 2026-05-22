@@ -20,9 +20,12 @@ const locale = {
     submit: '登录',
     loading: '登录中...',
     emptyPassword: '请输入密码',
+    showPassword: '显示密码',
+    hidePassword: '隐藏密码',
   },
   editor: {
     save: '保存',
+    saveShortcutHint: '保存（Ctrl/Cmd+S）',
     reset: '重置',
     download: '下载',
     validYaml: 'YAML 格式正确',

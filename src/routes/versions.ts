@@ -81,7 +81,7 @@ versionRoutes.delete('/:id', async (c) => {
     return c.body(null, 204)
   }
   if (result.reason === 'not_found') {
-    return c.json({ error: 'Version not found' }, 404)
+    return c.json({ error: 'Version not found', code: 'not_found' }, 404)
   }
-  return c.json({ error: 'Cannot delete the current version' }, 409)
+  return c.json({ error: 'Cannot delete the current version', code: 'is_current' }, 409)
 })

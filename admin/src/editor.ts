@@ -2,6 +2,7 @@ import { ApiClient } from './api'
 import { AuthError } from './auth'
 import { EditorState } from '@codemirror/state'
 import { EditorView, basicSetup } from 'codemirror'
+import { keymap } from '@codemirror/view'
 import { yaml } from '@codemirror/lang-yaml'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { linter, lintGutter, type Diagnostic } from '@codemirror/lint'
@@ -27,7 +28,7 @@ export function createEditorPage(onSaved?: () => void): Page {
       container.innerHTML = `
     <div class="editor-page">
       <div class="editor-toolbar">
-        <button id="editor-save" class="btn btn-primary">${iconSave} ${t.editor.save}</button>
+        <button id="editor-save" class="btn btn-primary" title="${t.editor.saveShortcutHint}">${iconSave} ${t.editor.save}</button>
         <button id="editor-reset" class="btn btn-secondary">${iconRefresh} ${t.editor.reset}</button>
         <button id="editor-download" class="btn btn-secondary">${iconDownload} ${t.editor.download}</button>
       </div>
@@ -125,6 +126,38 @@ export function createEditorPage(onSaved?: () => void): Page {
         return toCodeMirrorDiagnostics(result.issues)
       })
 
+      const saveConfig = async (): Promise<void> => {
+        if (!activeView || saveBtn.disabled) {
+          showToast(t.editor.notReady, 'error')
+          return
+        }
+        const doc = activeView.state.doc.toString()
+        const result = getYamlDiagnostics(doc, activeView.state.doc)
+        if (!result.ok) {
+          if (!(await showConfirm(t.editor.invalidSaveConfirm))) return
+        }
+        const msg = await showPrompt(
+          t.editor.versionMessagePrompt,
+          '',
+          t.editor.versionMessageLabel,
+        )
+        const versionMsg = msg || undefined
+
+        saveBtn.disabled = true
+        try {
+          await api.saveConfig(doc, versionMsg)
+          localStorage.removeItem('clash_admin_draft')
+          originalContent = doc
+          editorDirty = false
+          showToast(t.editor.configSaved, 'success')
+          if (onSaved) onSaved()
+        } catch (e: unknown) {
+          showToast(e instanceof Error ? e.message : String(e), 'error')
+        } finally {
+          saveBtn.disabled = false
+        }
+      }
+
       const initEditor = (content: string) => {
         if (activeView) activeView.destroy()
         editorDirty = false
@@ -137,10 +170,22 @@ export function createEditorPage(onSaved?: () => void): Page {
           }
         })
 
+        const saveKeymap = keymap.of([
+          {
+            key: 'Mod-s',
+            preventDefault: true,
+            run: () => {
+              void saveConfig()
+              return true
+            },
+          },
+        ])
+
         activeView = new EditorView({
           state: EditorState.create({
             doc: content,
             extensions: [
+              saveKeymap,
               basicSetup,
               search({ top: true, createPanel: createYamlSearchPanel }),
               yaml(),
@@ -178,36 +223,8 @@ export function createEditorPage(onSaved?: () => void): Page {
         }
       }
 
-      saveBtn.addEventListener('click', async () => {
-        if (!activeView) {
-          showToast(t.editor.notReady, 'error')
-          return
-        }
-        const doc = activeView.state.doc.toString()
-        const result = getYamlDiagnostics(doc, activeView.state.doc)
-        if (!result.ok) {
-          if (!(await showConfirm(t.editor.invalidSaveConfirm))) return
-        }
-        const msg = await showPrompt(
-          t.editor.versionMessagePrompt,
-          '',
-          t.editor.versionMessageLabel,
-        )
-        const versionMsg = msg || undefined
-
-        saveBtn.disabled = true
-        try {
-          await api.saveConfig(doc, versionMsg)
-          localStorage.removeItem('clash_admin_draft')
-          originalContent = doc
-          editorDirty = false
-          showToast(t.editor.configSaved, 'success')
-          if (onSaved) onSaved()
-        } catch (e: unknown) {
-          showToast(e instanceof Error ? e.message : String(e), 'error')
-        } finally {
-          saveBtn.disabled = false
-        }
+      saveBtn.addEventListener('click', () => {
+        void saveConfig()
       })
 
       resetBtn.addEventListener('click', async () => {

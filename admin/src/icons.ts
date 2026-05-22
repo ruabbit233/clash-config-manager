@@ -34,6 +34,8 @@ export const iconEdit = `<svg viewBox="0 0 20 20" fill="none" ${s}><path d="M13.
 
 export const iconEye = `<svg viewBox="0 0 20 20" fill="none" ${s}><path d="M2 10s2.5-5 8-5 8 5 8 5-2.5 5-8 5-8-5-8-5z"/><circle cx="10" cy="10" r="2.5"/></svg>`
 
+export const iconEyeOff = `<svg viewBox="0 0 20 20" fill="none" ${s}><path d="M3 3l14 14"/><path d="M8.2 5.4A8.7 8.7 0 0110 5c5.5 0 8 5 8 5a14.6 14.6 0 01-2.5 3.1M5.6 6.6A14.7 14.7 0 002 10s2.5 5 8 5a8.7 8.7 0 003.4-.7"/><path d="M11.6 11.6a2.5 2.5 0 01-3.2-3.2"/></svg>`
+
 export const iconSearch = `<svg viewBox="0 0 20 20" fill="none" ${s}><circle cx="9" cy="9" r="5.5"/><path d="M13 13l4 4"/></svg>`
 
 export const iconArrowUp = `<svg viewBox="0 0 20 20" fill="none" ${s}><path d="M10 16V4M5 9l5-5 5 5"/></svg>`
