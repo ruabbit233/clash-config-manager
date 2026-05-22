@@ -3,19 +3,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: var(--space-5);
   background:
-    radial-gradient(
-      ellipse 80% 50% at 50% -10%,
-      rgba(59, 130, 246, 0.28),
-      transparent 55%
-    ),
-    radial-gradient(
-      ellipse 60% 50% at 95% 105%,
-      rgba(139, 92, 246, 0.18),
-      transparent 60%
-    ),
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(59, 130, 246, 0.28), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 95% 105%, rgba(139, 92, 246, 0.18), transparent 60%),
     var(--bg-primary);
 }
 
@@ -119,7 +111,9 @@
   color: var(--text-muted);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: color var(--transition-fast), background-color var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast);
 }
 
 .login-toggle:hover {
