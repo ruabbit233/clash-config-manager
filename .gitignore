@@ -7,3 +7,4 @@ admin/dist/
 admin/node_modules/
 .playwright-mcp/
 coverage/
+.omo/
