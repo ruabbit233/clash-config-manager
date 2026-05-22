@@ -73,3 +73,9 @@ button {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.16);
 }
+
+/* `!important` is required: `.foo { display: flex }` ties `[hidden]` on
+   specificity and wins via cascade order, defeating the `hidden` attribute. */
+[hidden] {
+  display: none !important;
+}
