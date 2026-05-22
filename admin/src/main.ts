@@ -150,6 +150,7 @@ function router() {
   if (hash === '#/editor' || hash === '#/') {
     updateNav('editor')
     updateHeaderTitle('editor')
+    setContentMode('pane')
     currentPage?.unmount()
     const page = createEditorPage()
     page.mount(mainContent, api)
@@ -157,6 +158,7 @@ function router() {
   } else if (hash === '#/versions') {
     updateNav('versions')
     updateHeaderTitle('versions')
+    setContentMode('flow')
     currentPage?.unmount()
     const page = createVersionsPage()
     page.mount(mainContent, api)
@@ -164,6 +166,7 @@ function router() {
   } else if (hash === '#/headers') {
     updateNav('headers')
     updateHeaderTitle('headers')
+    setContentMode('flow')
     currentPage?.unmount()
     const page = createHeadersPage()
     page.mount(mainContent, api)
@@ -171,6 +174,10 @@ function router() {
   } else {
     window.location.hash = '#/editor'
   }
+}
+
+function setContentMode(mode: 'flow' | 'pane'): void {
+  mainContent.classList.toggle('app-content--pane', mode === 'pane')
 }
 
 /** Check if any page has unsaved changes */

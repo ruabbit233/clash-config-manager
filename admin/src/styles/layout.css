@@ -85,6 +85,13 @@
   background-color: var(--bg-primary);
 }
 
+.app-content--pane {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
 @media (min-width: 1280px) {
   .app-content {
     padding: var(--space-6) var(--space-8);

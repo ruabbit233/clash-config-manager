@@ -2,7 +2,8 @@
 .editor-page {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   gap: var(--space-3);
 }
 
@@ -12,14 +13,24 @@
   padding: 0;
   align-items: center;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .editor-toolbar .btn {
   flex-shrink: 0;
 }
 
+#editor-wrapper {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+}
+
 .cm-editor {
   flex: 1;
+  min-height: 0;
+  min-width: 0;
   border-radius: var(--radius);
   overflow: hidden;
   border: 1px solid var(--border-secondary);
@@ -36,6 +47,7 @@
 }
 
 .cm-editor .cm-scroller {
+  overflow: auto;
   font-family: var(--font-mono);
   font-size: var(--text-base);
   line-height: var(--leading-relaxed);
