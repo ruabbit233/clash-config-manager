@@ -108,6 +108,7 @@ export function createEditorPage(onSaved?: () => void): Page {
       let originalContent = ''
       let bannerExpanded = false
       let bannerHidden = false
+      let suppressDraftWrite = false
 
       const stateDefault = saveBtn.querySelector<HTMLSpanElement>('.btn-state-default')!
       const stateLoading = saveBtn.querySelector<HTMLSpanElement>('.btn-state-loading')!
@@ -324,6 +325,7 @@ export function createEditorPage(onSaved?: () => void): Page {
             const doc = update.state.doc.toString()
             const dirty = doc !== originalContent
             editorDirty = dirty
+            if (suppressDraftWrite) return
             if (dirty) {
               localStorage.setItem(DRAFT_KEY, doc)
               writeDraftMeta({
@@ -384,7 +386,8 @@ export function createEditorPage(onSaved?: () => void): Page {
       ): void => {
         draftBanner.hidden = false
         draftBanner.replaceChildren()
-        draftBanner.className = `draft-banner ${serverHashChanged ? 'draft-banner-stale' : ''}`
+        draftBanner.classList.add('draft-banner')
+        draftBanner.classList.toggle('draft-banner-stale', serverHashChanged)
 
         const head = document.createElement('div')
         head.className = 'draft-banner-head'
@@ -415,10 +418,16 @@ export function createEditorPage(onSaved?: () => void): Page {
         restoreBtn.textContent = t.editor.draftBannerRestore
         restoreBtn.addEventListener('click', () => {
           if (!activeView) return
-          activeView.dispatch({
-            changes: { from: 0, to: activeView.state.doc.length, insert: draft },
-          })
+          suppressDraftWrite = true
+          try {
+            activeView.dispatch({
+              changes: { from: 0, to: activeView.state.doc.length, insert: draft },
+            })
+          } finally {
+            suppressDraftWrite = false
+          }
           editorDirty = draft !== originalContent
+          clearDraft()
           draftBanner.hidden = true
           showToast(t.editor.draftRestored, 'success')
         })
