@@ -26,6 +26,7 @@ export interface SaveConfigResponse {
   versionId: string
   contentHash: string
   createdAt: string
+  unchanged?: boolean
 }
 export interface UpdateVersionResponse {
   id: string

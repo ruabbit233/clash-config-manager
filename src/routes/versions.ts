@@ -41,16 +41,16 @@ versionRoutes.post('/:id/rollback', async (c) => {
     return c.json({ error: 'Version not found' }, 404)
   }
 
-  const rollback = await saveVersion(
+  const { snapshot } = await saveVersion(
     c.env.KV,
     version.content,
     `Rollback to version ${id.slice(0, 8)}`,
   )
 
   return c.json({
-    versionId: rollback.id,
-    contentHash: rollback.contentHash,
-    createdAt: rollback.createdAt,
+    versionId: snapshot.id,
+    contentHash: snapshot.contentHash,
+    createdAt: snapshot.createdAt,
   })
 })
 

@@ -38,15 +38,17 @@ configRoutes.put('/', async (c) => {
     )
   }
 
-  const snapshot = await saveVersion(
+  const { snapshot, unchanged } = await saveVersion(
     c.env.KV,
     body.content,
     typeof body.message === 'string' && body.message.length > 0 ? body.message : 'Update config',
+    { skipIfUnchanged: true },
   )
 
   return c.json({
     versionId: snapshot.id,
     contentHash: snapshot.contentHash,
     createdAt: snapshot.createdAt,
+    unchanged,
   })
 })

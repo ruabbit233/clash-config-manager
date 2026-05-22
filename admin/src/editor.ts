@@ -271,12 +271,15 @@ export function createEditorPage(onSaved?: () => void): Page {
 
         setSaveState('loading')
         try {
-          await api.saveConfig(doc, versionMsg)
+          const result = await api.saveConfig(doc, versionMsg)
           clearDraft()
           originalContent = doc
           editorDirty = false
           flashSaved()
-          showToast(t.editor.configSaved, 'success')
+          showToast(
+            result.unchanged ? t.editor.configUnchanged : t.editor.configSaved,
+            result.unchanged ? 'info' : 'success',
+          )
           if (onSaved) onSaved()
         } catch (e: unknown) {
           setSaveState('default')

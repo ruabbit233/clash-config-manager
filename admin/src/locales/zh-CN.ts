@@ -52,6 +52,7 @@ const locale = {
     versionMessagePrompt: '请输入版本备注（可选）：',
     versionMessageLabel: '版本备注',
     configSaved: '配置已保存',
+    configUnchanged: '配置未变化，跳过保存',
     discardConfirm: '确定放弃修改并重新加载？',
     notReady: '编辑器尚未就绪，请稍后重试',
     draftBannerTitle: '检测到本地草稿',

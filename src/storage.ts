@@ -47,14 +47,43 @@ const hashContent = async (content: string): Promise<string> => {
     .join('')
 }
 
+export interface SaveVersionResult {
+  snapshot: VersionSnapshot
+  unchanged: boolean
+}
+
+export interface SaveVersionOptions {
+  /**
+   * Skip creating a new version (and bumping the current pointer) if the
+   * incoming content hashes equal the current version's hash. The current
+   * snapshot is returned with `unchanged: true`. Default: false.
+   *
+   * Rollback intentionally leaves this off — restoring an old version is a
+   * deliberate audit-relevant act even when the bytes happen to be equal.
+   */
+  skipIfUnchanged?: boolean
+}
+
 export const saveVersion = async (
   kv: KVNamespace,
   content: string,
   message: string,
-): Promise<VersionSnapshot> => {
+  options: SaveVersionOptions = {},
+): Promise<SaveVersionResult> => {
+  const contentHash = await hashContent(content)
+
+  if (options.skipIfUnchanged) {
+    const current = await kv.get<CurrentPointer>(CURRENT_KEY, 'json')
+    if (current) {
+      const currentSnapshot = await getVersion(kv, current.versionId)
+      if (currentSnapshot && currentSnapshot.contentHash === contentHash) {
+        return { snapshot: currentSnapshot, unchanged: true }
+      }
+    }
+  }
+
   const id = generateUlid()
   const createdAt = new Date().toISOString()
-  const contentHash = await hashContent(content)
 
   const snapshot: VersionSnapshot = {
     id,
@@ -78,7 +107,7 @@ export const saveVersion = async (
     throw error
   }
 
-  return snapshot
+  return { snapshot, unchanged: false }
 }
 
 export const getVersion = async (
