@@ -51,3 +51,13 @@ export const iconCaseSensitive = `<svg viewBox="0 0 20 20" fill="none" stroke="c
 export const iconWholeWord = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7v6M18 7v6"/><path d="M5 13l1.5-5L8 13M5.6 11.5h1.8"/><path d="M10 6.5v6.5h2a1.6 1.6 0 100-3.2H10m2 0a1.4 1.4 0 100-2.8H10"/></svg>`
 
 export const iconRegex = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4v6M10.4 5l5.2 4M10.4 9l5.2-4"/><circle cx="6" cy="14" r="1.2" fill="currentColor" stroke="none"/></svg>`
+
+export const iconChevronDown = `<svg viewBox="0 0 20 20" fill="none" ${s}><path d="M5 8l5 5 5-5"/></svg>`
+
+export const iconChevronUp = `<svg viewBox="0 0 20 20" fill="none" ${s}><path d="M5 12l5-5 5 5"/></svg>`
+
+export const iconWand = `<svg viewBox="0 0 20 20" fill="none" ${s}><path d="M14 4l1.5 1.5M16.5 6.5L18 8M11 7l1.5 1.5M14 9.5L15.5 11M3 17L13.5 6.5l1.5 1.5L4.5 18.5z"/></svg>`
+
+export const iconCopy = `<svg viewBox="0 0 20 20" fill="none" ${s}><rect x="6" y="6" width="11" height="11" rx="1.5"/><path d="M14 6V4.5A1.5 1.5 0 0012.5 3H4.5A1.5 1.5 0 003 4.5v8A1.5 1.5 0 004.5 14H6"/></svg>`
+
+export const iconClockArrow = `<svg viewBox="0 0 20 20" fill="none" ${s}><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/></svg>`

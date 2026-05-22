@@ -251,3 +251,86 @@ export function showVersionPreview(opts: VersionPreviewOptions): Promise<Version
     closeBtn.focus()
   })
 }
+
+export interface SaveDialogOptions {
+  title: string
+  invalidWarning?: string
+  messageLabel: string
+  messagePlaceholder: string
+  defaultMessage?: string
+  confirmLabel: string
+  cancelLabel: string
+}
+
+export interface SaveDialogResult {
+  message: string
+}
+
+export function showSaveDialog(opts: SaveDialogOptions): Promise<SaveDialogResult | null> {
+  return new Promise((resolve) => {
+    const overlay = createOverlay()
+    const { card, body, footer } = createCard(opts.title)
+
+    if (opts.invalidWarning) {
+      const warn = document.createElement('div')
+      warn.className = 'save-dialog-warning'
+      warn.textContent = opts.invalidWarning
+      body.appendChild(warn)
+    }
+
+    const label = document.createElement('label')
+    label.className = 'form-label save-dialog-label'
+    label.textContent = opts.messageLabel
+    label.htmlFor = 'save-dialog-message'
+
+    const input = document.createElement('input')
+    input.id = 'save-dialog-message'
+    input.className = 'modal-input'
+    input.placeholder = opts.messagePlaceholder
+    input.value = opts.defaultMessage ?? ''
+
+    body.append(label, input)
+
+    const cancelBtn = document.createElement('button')
+    cancelBtn.className = 'btn btn-secondary'
+    cancelBtn.textContent = opts.cancelLabel
+
+    const okBtn = document.createElement('button')
+    okBtn.className = 'btn btn-primary'
+    okBtn.textContent = opts.confirmLabel
+
+    footer.append(cancelBtn, okBtn)
+    overlay.append(card)
+    document.body.append(overlay)
+
+    const close = (result: SaveDialogResult | null) => {
+      document.removeEventListener('keydown', onKey)
+      overlay.remove()
+      resolve(result)
+    }
+
+    cancelBtn.addEventListener('click', () => close(null))
+    okBtn.addEventListener('click', () => close({ message: input.value.trim() }))
+    querySelectorRequired<HTMLButtonElement>(card, '.modal-close').addEventListener('click', () =>
+      close(null),
+    )
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) close(null)
+    })
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.isComposing) {
+        e.preventDefault()
+        close({ message: input.value.trim() })
+      }
+    })
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close(null)
+    }
+    document.addEventListener('keydown', onKey)
+
+    input.focus()
+    input.select()
+  })
+}
