@@ -139,6 +139,104 @@ export function showPrompt(
   })
 }
 
+export function showSubscriptionDialog(): Promise<{ name: string; path: string } | null> {
+  return new Promise((resolve) => {
+    const previousFocus = document.activeElement
+    const overlay = createOverlay()
+    const { card, body, footer } = createCard(t.subscriptions.add)
+    card.setAttribute('role', 'dialog')
+    card.setAttribute('aria-modal', 'true')
+    card.setAttribute('aria-label', t.subscriptions.add)
+
+    const form = document.createElement('form')
+    form.id = 'subscription-create-form'
+    form.className = 'subscription-form'
+
+    const nameLabel = document.createElement('label')
+    nameLabel.textContent = t.subscriptions.namePrompt
+    nameLabel.htmlFor = 'subscription-name-input'
+    const name = document.createElement('input')
+    name.id = nameLabel.htmlFor
+    name.className = 'modal-input'
+    name.placeholder = t.subscriptions.namePlaceholder
+    name.maxLength = 128
+    name.required = true
+
+    const pathLabel = document.createElement('label')
+    pathLabel.textContent = t.subscriptions.pathPrompt
+    pathLabel.htmlFor = 'subscription-path-input'
+    const path = document.createElement('input')
+    path.id = pathLabel.htmlFor
+    path.className = 'modal-input'
+    path.value = crypto.randomUUID().replace(/-/g, '').slice(0, 16)
+    path.maxLength = 64
+    path.required = true
+    path.spellcheck = false
+
+    const hint = document.createElement('p')
+    hint.textContent = t.subscriptions.pathHint
+    const preview = document.createElement('code')
+    const updatePreview = () => {
+      preview.textContent = `${window.location.origin}/bus/${path.value.trim()}`
+    }
+    path.addEventListener('input', updatePreview)
+    updatePreview()
+
+    const error = document.createElement('p')
+    error.setAttribute('role', 'alert')
+    error.className = 'subscription-form-error'
+    form.append(nameLabel, name, pathLabel, path, hint, preview, error)
+    body.append(form)
+
+    const cancel = document.createElement('button')
+    cancel.className = 'btn btn-secondary'
+    cancel.textContent = t.modal.cancel
+    const submit = document.createElement('button')
+    submit.className = 'btn btn-primary'
+    submit.textContent = t.subscriptions.add
+    submit.type = 'submit'
+    submit.setAttribute('form', form.id)
+    footer.append(cancel, submit)
+    overlay.append(card)
+    document.body.append(overlay)
+
+    const close = (result: { name: string; path: string } | null) => {
+      document.removeEventListener('keydown', onKey)
+      overlay.remove()
+      if (previousFocus instanceof HTMLElement) previousFocus.focus()
+      resolve(result)
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') close(null)
+    }
+    document.addEventListener('keydown', onKey)
+    cancel.addEventListener('click', () => close(null))
+    querySelectorRequired<HTMLButtonElement>(card, '.modal-close').addEventListener('click', () =>
+      close(null),
+    )
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) close(null)
+    })
+    form.addEventListener('submit', (event) => {
+      event.preventDefault()
+      const nextName = name.value.trim()
+      const nextPath = path.value.trim()
+      if (!nextName || nextName.length > 128 || /\p{Cc}/u.test(name.value)) {
+        error.textContent = t.subscriptions.invalidName
+        name.focus()
+        return
+      }
+      if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/.test(nextPath)) {
+        error.textContent = t.subscriptions.invalidPath
+        path.focus()
+        return
+      }
+      close({ name: nextName, path: nextPath })
+    })
+    name.focus()
+  })
+}
+
 export type VersionPreviewAction = 'rollback' | 'close'
 
 export interface VersionPreviewOptions {

@@ -66,11 +66,24 @@ export class ApiClient {
     return this.fetch<Subscription[]>('/api/subscriptions')
   }
 
-  async createSubscription(name: string): Promise<Subscription> {
+  async createSubscription(name: string, path: string): Promise<Subscription> {
     return this.fetch<Subscription>('/api/subscriptions', {
       method: 'POST',
+      body: JSON.stringify({ name, path }),
+    })
+  }
+
+  async renameSubscription(name: string): Promise<Subscription> {
+    if (!this.subscription) throw new ApiError('A subscription is required', 400)
+    return this.fetch<Subscription>(`${this.configBase}`, {
+      method: 'PATCH',
       body: JSON.stringify({ name }),
     })
+  }
+
+  async deleteSubscription(): Promise<void> {
+    if (!this.subscription) throw new ApiError('The default subscription cannot be deleted', 400)
+    await this.fetch<void>(`${this.configBase}`, { method: 'DELETE' })
   }
 
   private async fetch<T>(path: string, options: RequestInit = {}): Promise<T> {

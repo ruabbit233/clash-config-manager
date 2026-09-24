@@ -58,8 +58,8 @@ describe('named subscriptions', () => {
       env,
     )
 
-  const create = async (name: string) => {
-    const res = await request('/api/subscriptions', 'POST', { name })
+  const create = async (name: string, path = name) => {
+    const res = await request('/api/subscriptions', 'POST', { name, path })
     expect(res.status).toBe(201)
     return res.json<Subscription>()
   }
@@ -88,6 +88,155 @@ describe('named subscriptions', () => {
     )
   })
 
+  it('renames display names without changing links, current version, history or headers', async () => {
+    const created = await create('家庭订阅', 'abcdefgh')
+    expect(created).toMatchObject({ name: '家庭订阅', path: 'abcdefgh' })
+    const saved = await save('abcdefgh', 'name: unchanged')
+    await request('/api/subscriptions/abcdefgh/headers', 'PUT', { 'X-Config': 'family' })
+    const before = await (await request('/api/subscriptions/abcdefgh/versions')).json()
+    const renamed = await request('/api/subscriptions/abcdefgh', 'PATCH', { name: ' 工作订阅 ' })
+    expect(renamed.status).toBe(200)
+    expect(await renamed.json<Subscription>()).toEqual({ ...created, name: '工作订阅' })
+    expect(await (await request('/api/subscriptions')).json()).toEqual([
+      { ...created, name: '工作订阅' },
+    ])
+    expect(await (await request('/api/subscriptions/abcdefgh/config')).json()).toMatchObject({
+      content: 'name: unchanged',
+      versionId: saved.versionId,
+    })
+    expect(await (await request('/api/subscriptions/abcdefgh/versions')).json()).toEqual(before)
+    for (const path of ['/bus/abcdefgh', '/bus/abcdefgh/', '/bus/abcdefgh/download']) {
+      const res = await request(path, 'GET', undefined, false)
+      expect(res.status).toBe(200)
+      expect(res.headers.get('X-Config')).toBe('family')
+      expect(await res.text()).toBe('name: unchanged')
+    }
+    expect(
+      (await request('/bus/' + encodeURIComponent('工作订阅'), 'GET', undefined, false)).status,
+    ).toBe(404)
+  })
+
+  it('allows duplicate display names while keeping paths unique and immutable', async () => {
+    await create('同名订阅', 'first')
+    await create('同名订阅', 'second')
+    expect(
+      (await request('/api/subscriptions', 'POST', { name: '不同名字', path: 'first' })).status,
+    ).toBe(409)
+    expect(
+      (await request('/api/subscriptions/first', 'PATCH', { name: '新名字', path: 'moved' }))
+        .status,
+    ).toBe(400)
+    expect(await (await request('/api/subscriptions')).json()).toMatchObject([
+      { name: '同名订阅', path: 'first' },
+      { name: '同名订阅', path: 'second' },
+    ])
+  })
+
+  it('reads old metadata without a path, and upgrades it on rename without migrating config data', async () => {
+    const legacy = { name: 'legacy', createdAt: '2026-01-01T00:00:00.000Z' }
+    await env.KV.put('subscription-meta:legacy', JSON.stringify(legacy), { metadata: legacy })
+    await save('legacy', 'name: legacy')
+    expect(await (await request('/api/subscriptions')).json()).toEqual([
+      { ...legacy, path: 'legacy' },
+    ])
+    expect(
+      (await request('/api/subscriptions/legacy', 'PATCH', { name: '旧订阅的新名称' })).status,
+    ).toBe(200)
+    expect(await env.KV.get('subscription-meta:legacy', 'json')).toEqual({
+      ...legacy,
+      name: '旧订阅的新名称',
+      path: 'legacy',
+    })
+    expect(await (await request('/bus/legacy', 'GET', undefined, false)).text()).toBe(
+      'name: legacy',
+    )
+    const oldClient = await request('/api/subscriptions', 'POST', { name: 'old-client' })
+    expect(oldClient.status).toBe(201)
+    expect(await oldClient.json()).toMatchObject({ name: 'old-client', path: 'old-client' })
+  })
+
+  it('deletes all paginated data only for the selected path, then allows a fresh subscription there', async () => {
+    await create('删除对象', 'one')
+    await create('保留对象', 'one2')
+    await save('', 'name: default')
+    await save('one2', 'name: retained')
+    const oldVersion = await save('one', 'name: first')
+    await save('one', 'name: second')
+    await save('one', 'name: third')
+    await request('/api/subscriptions/one/headers', 'PUT', { 'X-Private': 'old' })
+    const deleted = await request('/api/subscriptions/one', 'DELETE')
+    expect(deleted.status).toBe(204)
+    expect(await deleted.text()).toBe('')
+    expect(await env.KV.get('subscription-meta:one')).toBeNull()
+    expect((await env.KV.list({ prefix: 'subscription:one:' })).keys).toEqual([])
+    expect(await (await request('/api/subscriptions')).json()).toMatchObject([
+      { name: '保留对象', path: 'one2' },
+    ])
+    for (const path of [
+      '/bus/one',
+      '/bus/one/',
+      '/bus/one/download',
+      '/api/subscriptions/one/config',
+      '/api/subscriptions/one/versions',
+      '/api/subscriptions/one/headers',
+    ]) {
+      expect((await request(path)).status).toBe(404)
+    }
+    expect((await request('/api/subscriptions/one', 'DELETE')).status).toBe(404)
+    expect((await request('/api/subscriptions/one', 'PATCH', { name: 'missing' })).status).toBe(404)
+    expect(await (await request('/bus/one2', 'GET', undefined, false)).text()).toBe(
+      'name: retained',
+    )
+    expect(await (await request('/download', 'GET', undefined, false)).text()).toBe('name: default')
+    await create('重新创建', 'one')
+    expect((await request(`/api/subscriptions/one/versions/${oldVersion.versionId}`)).status).toBe(
+      404,
+    )
+    expect(await (await request('/api/subscriptions/one/headers')).json()).toEqual({})
+    const versions = await (
+      await request('/api/subscriptions/one/versions')
+    ).json<{ keys: VersionListItem[] }>()
+    expect(versions.keys).toHaveLength(1)
+  })
+
+  it('keeps a failed deletion retryable until all data is cleaned up', async () => {
+    await create('待删除', 'retry')
+    await save('retry', 'name: first')
+    await save('retry', 'name: second')
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      vi.mocked(env.KV.delete).mockRejectedValueOnce(new Error('Temporary KV failure'))
+      expect((await request('/api/subscriptions/retry', 'DELETE')).status).toBe(500)
+      expect(await env.KV.get('subscription-meta:retry')).not.toBeNull()
+      expect((await request('/api/subscriptions/retry', 'DELETE')).status).toBe(204)
+      expect((await env.KV.list({ prefix: 'subscription:retry:' })).keys).toEqual([])
+    } finally {
+      errorLog.mockRestore()
+    }
+  })
+
+  it.each(['', '   ', 'a'.repeat(129), 'line\nbreak', null, 123])(
+    'rejects invalid display name %j',
+    async (name) => {
+      await create('unchanged', 'existing')
+      expect((await request('/api/subscriptions', 'POST', { name, path: 'new' })).status).toBe(400)
+      expect((await request('/api/subscriptions/existing', 'PATCH', { name })).status).toBe(400)
+      expect(await (await request('/api/subscriptions')).json()).toMatchObject([
+        { name: 'unchanged', path: 'existing' },
+      ])
+    },
+  )
+
+  it.each(['', 'a/b', '../bad', '中文', 'a'.repeat(65), null, 123])(
+    'rejects invalid explicit path %j',
+    async (path) => {
+      expect(
+        (await request('/api/subscriptions', 'POST', { name: 'valid-name', path })).status,
+      ).toBe(400)
+      expect(env.KV.put).not.toHaveBeenCalled()
+    },
+  )
+
   it.each([
     '',
     '../x',
@@ -110,6 +259,8 @@ describe('named subscriptions', () => {
     const routes = [
       ['/api/subscriptions', 'GET'],
       ['/api/subscriptions', 'POST'],
+      ['/api/subscriptions/abcdefgh', 'PATCH'],
+      ['/api/subscriptions/abcdefgh', 'DELETE'],
       ['/api/subscriptions/abcdefgh/config', 'GET'],
       ['/api/subscriptions/abcdefgh/config', 'PUT'],
       ['/api/subscriptions/abcdefgh/versions', 'GET'],

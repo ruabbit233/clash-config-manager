@@ -40,6 +40,30 @@
   overflow-wrap: anywhere;
 }
 
+.subscription-picker .subscription-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.subscription-form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.subscription-form code {
+  overflow-wrap: anywhere;
+}
+
+.subscription-form p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.subscription-form .subscription-form-error {
+  color: var(--error);
+}
+
 .app-header .header-left {
   min-width: 0;
 }

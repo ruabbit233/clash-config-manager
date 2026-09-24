@@ -264,15 +264,24 @@ export const updateVersionMessage = async (
   return snapshot
 }
 
-export const isSubscriptionName = (name: string): boolean =>
+export const isSubscriptionPath = (name: string): boolean =>
   /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/.test(name)
+
+export const isSubscriptionName = (name: string): boolean =>
+  name.trim().length > 0 && name.trim().length <= 128 && !/\p{Cc}/u.test(name)
 
 export const getSubscription = async (
   kv: KVNamespace,
-  name: string,
+  path: string,
 ): Promise<Subscription | null> => {
-  if (!isSubscriptionName(name)) return null
-  return kv.get<Subscription>(`${STORAGE_CONFIG.SUBSCRIPTION_META_PREFIX}${name}`, 'json')
+  if (!isSubscriptionPath(path)) return null
+  const raw = await kv.get<Subscription>(
+    `${STORAGE_CONFIG.SUBSCRIPTION_META_PREFIX}${path}`,
+    'json',
+  )
+  if (!raw) return null
+  // Records created before name/path were split used `name` as the path.
+  return { ...raw, path }
 }
 
 export const listSubscriptions = async (kv: KVNamespace): Promise<Subscription[]> => {
@@ -284,7 +293,9 @@ export const listSubscriptions = async (kv: KVNamespace): Promise<Subscription[]
       cursor,
     })
     for (const key of page.keys) {
-      if (key.metadata) subscriptions.push(key.metadata)
+      const path = key.name.slice(STORAGE_CONFIG.SUBSCRIPTION_META_PREFIX.length)
+      const raw = key.metadata ?? (await kv.get<Subscription>(key.name, 'json'))
+      if (raw) subscriptions.push({ ...raw, path })
     }
     if (page.list_complete) break
     cursor = page.cursor
@@ -295,16 +306,57 @@ export const listSubscriptions = async (kv: KVNamespace): Promise<Subscription[]
 export const createSubscription = async (
   kv: KVNamespace,
   name: string,
+  path: string = name,
 ): Promise<Subscription | null> => {
-  if (!isSubscriptionName(name)) throw new Error('Invalid subscription name')
-  if (await getSubscription(kv, name)) return null
-  const subscription: Subscription = { name, createdAt: new Date().toISOString() }
+  if (!isSubscriptionName(name) || !isSubscriptionPath(path))
+    throw new Error('Invalid subscription')
+  if (await getSubscription(kv, path)) return null
+  const subscription: Subscription = {
+    name: name.trim(),
+    path,
+    createdAt: new Date().toISOString(),
+  }
   // Publish metadata only after the initial configuration is ready.
   await saveVersion(kv, 'proxies: []\nproxy-groups: []\nrules: []\n', 'Create subscription', {
-    subscription: name,
+    subscription: path,
   })
-  await kv.put(`${STORAGE_CONFIG.SUBSCRIPTION_META_PREFIX}${name}`, JSON.stringify(subscription), {
+  await kv.put(`${STORAGE_CONFIG.SUBSCRIPTION_META_PREFIX}${path}`, JSON.stringify(subscription), {
     metadata: subscription,
   })
   return subscription
+}
+
+export const updateSubscription = async (
+  kv: KVNamespace,
+  path: string,
+  name: string,
+): Promise<Subscription | null> => {
+  if (!isSubscriptionPath(path) || !isSubscriptionName(name)) return null
+  const current = await getSubscription(kv, path)
+  if (!current) return null
+  const updated = { ...current, name: name.trim() }
+  await kv.put(`${STORAGE_CONFIG.SUBSCRIPTION_META_PREFIX}${path}`, JSON.stringify(updated), {
+    metadata: updated,
+  })
+  return updated
+}
+
+export const deleteSubscription = async (kv: KVNamespace, path: string): Promise<boolean> => {
+  if (!isSubscriptionPath(path) || !(await getSubscription(kv, path))) return false
+  const prefix = `${STORAGE_CONFIG.SUBSCRIPTION_PREFIX}${path}:`
+  const keys: string[] = []
+  let cursor: string | undefined
+  do {
+    const page = await kv.list({ prefix, cursor })
+    keys.push(...page.keys.map((key) => key.name))
+    if (page.list_complete) break
+    cursor = page.cursor
+  } while (cursor)
+  // Finish listing before mutation so deletion cannot invalidate the cursor.
+  // Keep the registry until cleanup succeeds, allowing a failed deletion to be retried.
+  for (let start = 0; start < keys.length; start += 50) {
+    await Promise.all(keys.slice(start, start + 50).map((key) => kv.delete(key)))
+  }
+  await kv.delete(`${STORAGE_CONFIG.SUBSCRIPTION_META_PREFIX}${path}`)
+  return true
 }

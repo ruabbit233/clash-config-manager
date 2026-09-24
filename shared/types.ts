@@ -24,5 +24,6 @@ export interface TokenPayload {
 
 export interface Subscription {
   name: string
+  path: string
   createdAt: string
 }

@@ -15,8 +15,9 @@ import { createEditorPage } from './editor'
 import { createVersionsPage } from './versions'
 import { createHeadersPage } from './headers'
 import type { Page } from './page'
+import type { Subscription } from '@shared/types'
 import { t } from './i18n'
-import { showConfirm, showPrompt } from './modal'
+import { showConfirm, showPrompt, showSubscriptionDialog } from './modal'
 import { showToast } from './toast'
 import { iconShield, iconCode, iconClock, iconList, iconLogout, iconMenu } from './icons'
 import { getElementById } from './dom'
@@ -38,8 +39,12 @@ const layout = `
     <div class="subscription-picker">
       <label for="subscription-select">${t.subscriptions.label}</label>
       <select id="subscription-select" disabled></select>
-      <button id="subscription-add" class="btn btn-secondary btn-sm" disabled>${t.subscriptions.add}</button>
-      <button id="subscription-copy" class="btn btn-ghost btn-sm">${t.subscriptions.copy}</button>
+      <div class="subscription-actions">
+        <button id="subscription-add" class="btn btn-secondary btn-sm" disabled>${t.subscriptions.add}</button>
+        <button id="subscription-rename" class="btn btn-ghost btn-sm" disabled>${t.subscriptions.rename}</button>
+        <button id="subscription-delete" class="btn btn-ghost btn-sm" disabled>${t.subscriptions.delete}</button>
+        <button id="subscription-copy" class="btn btn-ghost btn-sm">${t.subscriptions.copy}</button>
+      </div>
       <code id="subscription-path"></code>
     </div>
     <nav class="sidebar-nav">
@@ -87,44 +92,70 @@ let backdrop: HTMLDivElement | null = null
 let currentPage: Page | null = null
 const subscriptionSelect = getElementById<HTMLSelectElement>('subscription-select')
 const subscriptionAdd = getElementById<HTMLButtonElement>('subscription-add')
+const subscriptionRename = getElementById<HTMLButtonElement>('subscription-rename')
+const subscriptionDelete = getElementById<HTMLButtonElement>('subscription-delete')
 const subscriptionPath = getElementById<HTMLElement>('subscription-path')
 let subscriptionsLoaded = false
 let subscriptionsLoading = false
+let subscriptionBusy = false
+const subscriptions = new Map<string, Subscription>()
 
-const renderSubscriptions = (names: string[]) => {
+const selectedSubscriptionName = () =>
+  subscriptions.get(selectedSubscription)?.name ||
+  selectedSubscription ||
+  t.subscriptions.defaultName
+
+const updateSubscriptionControls = () => {
+  const disabled = subscriptionBusy || subscriptionsLoading
+  subscriptionSelect.disabled = disabled
+  subscriptionAdd.disabled = disabled
+  subscriptionRename.disabled = disabled || !selectedSubscription
+  subscriptionDelete.disabled = disabled || !selectedSubscription
+}
+
+const renderSubscriptions = () => {
   const options = [new Option(t.subscriptions.defaultName, '')]
-  const allNames = new Set(names)
-  if (selectedSubscription) allNames.add(selectedSubscription)
-  for (const name of [...allNames].sort()) options.push(new Option(name, name))
+  const items = [...subscriptions.values()].sort((a, b) => a.name.localeCompare(b.name))
+  for (const item of items) options.push(new Option(`${item.name} · ${item.path}`, item.path))
+  if (selectedSubscription && !subscriptions.has(selectedSubscription)) {
+    options.push(new Option(selectedSubscription, selectedSubscription))
+  }
   subscriptionSelect.replaceChildren(...options)
   subscriptionSelect.value = selectedSubscription
   subscriptionPath.textContent = api.publicPath
+  updateSubscriptionControls()
+  const target = window.location.hash.slice(2) || 'editor'
+  updateHeaderTitle(target)
 }
 
 const loadSubscriptions = async () => {
   if (subscriptionsLoaded || subscriptionsLoading) return
   subscriptionsLoading = true
+  updateSubscriptionControls()
   try {
-    const subscriptions = await api.listSubscriptions()
-    renderSubscriptions(subscriptions.map((item) => item.name))
+    const items = await api.listSubscriptions()
+    subscriptions.clear()
+    for (const item of items) subscriptions.set(item.path, item)
     subscriptionsLoaded = true
+    if (selectedSubscription && !subscriptions.has(selectedSubscription) && !hasUnsavedChanges()) {
+      selectSubscription('')
+    } else {
+      renderSubscriptions()
+    }
   } catch (error) {
     showToast(error instanceof Error ? error.message : String(error), 'error')
   } finally {
     subscriptionsLoading = false
-    subscriptionSelect.disabled = false
-    subscriptionAdd.disabled = false
+    updateSubscriptionControls()
   }
 }
 
-const selectSubscription = (name: string, openEditor = false) => {
-  selectedSubscription = name
-  localStorage.setItem(selectedSubscriptionKey, name)
+const selectSubscription = (path: string, openEditor = false) => {
+  selectedSubscription = path
+  localStorage.setItem(selectedSubscriptionKey, path)
   // Each mounted page keeps its own client, including while requests are in flight.
-  api = new ApiClient('', getToken, name)
-  renderSubscriptions(
-    Array.from(subscriptionSelect.options, (option) => option.value).filter(Boolean),
-  )
+  api = new ApiClient('', getToken, path)
+  renderSubscriptions()
   if (openEditor && window.location.hash !== '#/editor') {
     currentPage?.unmount()
     currentPage = null
@@ -137,29 +168,29 @@ const selectSubscription = (name: string, openEditor = false) => {
 subscriptionSelect.addEventListener('change', async () => {
   const next = subscriptionSelect.value
   subscriptionSelect.value = selectedSubscription
-  if (next === selectedSubscription) return
-  subscriptionSelect.disabled = true
+  if (next === selectedSubscription || subscriptionBusy) return
+  subscriptionBusy = true
+  updateSubscriptionControls()
   try {
     if (hasUnsavedChanges() && !(await showConfirm(t.app.unsavedLeave))) return
     selectSubscription(next)
   } finally {
-    subscriptionSelect.disabled = false
+    subscriptionBusy = false
+    updateSubscriptionControls()
   }
 })
 
 subscriptionAdd.addEventListener('click', async () => {
-  subscriptionAdd.disabled = true
+  if (subscriptionBusy) return
+  subscriptionBusy = true
+  updateSubscriptionControls()
   try {
-    const input = await showPrompt(t.subscriptions.namePrompt, '', t.subscriptions.add)
-    if (input === null) return
-    const name = input.trim()
-    if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/.test(name)) {
-      showToast(t.subscriptions.invalidName, 'error')
-      return
-    }
+    const input = await showSubscriptionDialog()
+    if (!input) return
     if (hasUnsavedChanges() && !(await showConfirm(t.app.unsavedLeave))) return
-    await api.createSubscription(name)
-    selectSubscription(name, true)
+    const item = await api.createSubscription(input.name, input.path)
+    subscriptions.set(item.path, item)
+    selectSubscription(item.path, true)
     showToast(t.subscriptions.created, 'success')
   } catch (error) {
     const message =
@@ -170,7 +201,64 @@ subscriptionAdd.addEventListener('click', async () => {
           : String(error)
     showToast(message, 'error')
   } finally {
-    subscriptionAdd.disabled = false
+    subscriptionBusy = false
+    updateSubscriptionControls()
+  }
+})
+
+subscriptionRename.addEventListener('click', async () => {
+  if (!selectedSubscription || subscriptionBusy) return
+  const client = api
+  const name = selectedSubscriptionName()
+  subscriptionBusy = true
+  updateSubscriptionControls()
+  try {
+    const input = await showPrompt(t.subscriptions.renamePrompt, name, t.subscriptions.rename)
+    if (input === null || input.trim() === name) return
+    if (!input.trim() || input.trim().length > 128 || /\p{Cc}/u.test(input)) {
+      showToast(t.subscriptions.invalidName, 'error')
+      return
+    }
+    const item = await client.renameSubscription(input.trim())
+    subscriptions.set(item.path, item)
+    // Renaming leaves the mounted editor and any unsaved changes intact.
+    renderSubscriptions()
+    showToast(t.subscriptions.renamed, 'success')
+  } catch (error) {
+    showToast(error instanceof Error ? error.message : String(error), 'error')
+  } finally {
+    subscriptionBusy = false
+    updateSubscriptionControls()
+  }
+})
+
+subscriptionDelete.addEventListener('click', async () => {
+  if (!selectedSubscription || subscriptionBusy) return
+  const client = api
+  const path = selectedSubscription
+  const name = selectedSubscriptionName()
+  subscriptionBusy = true
+  updateSubscriptionControls()
+  try {
+    if (!(await showConfirm(t.subscriptions.deleteConfirm({ name, path })))) return
+    mainContent.inert = true
+    await client.deleteSubscription()
+    if (selectedSubscription === path) {
+      currentPage?.unmount()
+      currentPage = null
+      selectSubscription('')
+    }
+    subscriptions.delete(path)
+    localStorage.removeItem(`clash_admin_draft:${path}`)
+    localStorage.removeItem(`clash_admin_draft_meta:${path}`)
+    renderSubscriptions()
+    showToast(t.subscriptions.deleted, 'success')
+  } catch (error) {
+    showToast(error instanceof Error ? error.message : String(error), 'error')
+  } finally {
+    mainContent.inert = false
+    subscriptionBusy = false
+    updateSubscriptionControls()
   }
 })
 
@@ -183,7 +271,7 @@ getElementById<HTMLButtonElement>('subscription-copy').addEventListener('click',
   }
 })
 
-renderSubscriptions([])
+renderSubscriptions()
 
 logoutBtn.addEventListener('click', async () => {
   if (!(await showConfirm(t.app.logoutConfirm))) return
@@ -233,7 +321,7 @@ function updateHeaderTitle(target: string) {
     versions: t.nav.versions,
     headers: t.nav.headers,
   }
-  headerTitle.textContent = `${titles[target] || ''} · ${selectedSubscription || t.subscriptions.defaultName}`
+  headerTitle.textContent = `${titles[target] || ''} · ${selectedSubscriptionName()}`
 }
 
 function router() {
