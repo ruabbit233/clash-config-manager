@@ -1,6 +1,12 @@
-import type { HeadersConfig, TokenPayload, VersionListItem, VersionSnapshot } from '@shared/types'
+import type {
+  HeadersConfig,
+  Subscription,
+  TokenPayload,
+  VersionListItem,
+  VersionSnapshot,
+} from '@shared/types'
 
-export type { HeadersConfig, TokenPayload, VersionListItem, VersionSnapshot }
+export type { HeadersConfig, Subscription, TokenPayload, VersionListItem, VersionSnapshot }
 
 export interface Env {
   KV: KVNamespace
@@ -34,6 +40,8 @@ export const STORAGE_CONFIG = {
   CURRENT_KEY: 'config:current',
   /** KV key for custom response headers */
   HEADERS_KEY: 'headers:config',
+  SUBSCRIPTION_PREFIX: 'subscription:',
+  SUBSCRIPTION_META_PREFIX: 'subscription-meta:',
 } as const
 
 export const HEADER_CONFIG = {

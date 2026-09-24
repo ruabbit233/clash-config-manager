@@ -23,8 +23,9 @@ export const safeParseJson = async <T>(c: Context<{ Bindings: Env }>): Promise<T
 export const createYamlResponse = async (
   c: Context<{ Bindings: Env }>,
   asDownload: boolean,
+  subscription?: string,
 ): Promise<Response> => {
-  const current = await getCurrent(c.env.KV)
+  const current = await getCurrent(c.env.KV, subscription)
   if (!current) {
     return c.text('No config found', 404, { 'Content-Type': 'text/plain' })
   }
@@ -51,10 +52,11 @@ export const createYamlResponse = async (
   }
 
   if (asDownload) {
-    headers.set('Content-Disposition', `attachment; filename="${HEADER_CONFIG.DOWNLOAD_FILENAME}"`)
+    const filename = subscription ? `${subscription}.yaml` : HEADER_CONFIG.DOWNLOAD_FILENAME
+    headers.set('Content-Disposition', `attachment; filename="${filename}"`)
   }
 
-  const customHeaders = await getHeaders(c.env.KV)
+  const customHeaders = await getHeaders(c.env.KV, subscription)
   for (const [name, value] of Object.entries(customHeaders)) {
     headers.set(name, String(value))
   }

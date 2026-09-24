@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { subscriptionScope } from '../utils/subscription'
 import { parseDocument } from 'yaml'
 import { safeParseJson } from '../utils/response'
 import { getCurrent, saveVersion } from '../storage'
@@ -7,7 +8,7 @@ import type { Env } from '../types'
 export const configRoutes = new Hono<{ Bindings: Env }>()
 
 configRoutes.get('/', async (c) => {
-  const current = await getCurrent(c.env.KV)
+  const current = await getCurrent(c.env.KV, subscriptionScope(c))
   if (!current) {
     return c.json({ error: 'No config found' }, 404)
   }
@@ -42,7 +43,7 @@ configRoutes.put('/', async (c) => {
     c.env.KV,
     body.content,
     typeof body.message === 'string' && body.message.length > 0 ? body.message : 'Update config',
-    { skipIfUnchanged: true },
+    { skipIfUnchanged: true, subscription: subscriptionScope(c) },
   )
 
   return c.json({

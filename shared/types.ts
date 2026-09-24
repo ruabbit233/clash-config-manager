@@ -21,3 +21,8 @@ export interface TokenPayload {
   exp: number;
   iat: number;
 }
+
+export interface Subscription {
+  name: string
+  createdAt: string
+}

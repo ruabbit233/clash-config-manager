@@ -1,7 +1,16 @@
-import type { CurrentPointer, HeadersConfig, VersionListItem, VersionSnapshot } from './types'
+import type {
+  CurrentPointer,
+  HeadersConfig,
+  Subscription,
+  VersionListItem,
+  VersionSnapshot,
+} from './types'
 import { STORAGE_CONFIG } from './types'
 
 const { VERSION_PREFIX, CURRENT_KEY, HEADERS_KEY } = STORAGE_CONFIG
+
+const scopedKey = (key: string, subscription?: string): string =>
+  subscription ? `${STORAGE_CONFIG.SUBSCRIPTION_PREFIX}${subscription}:${key}` : key
 
 const ULID_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
 
@@ -53,6 +62,7 @@ export interface SaveVersionResult {
 }
 
 export interface SaveVersionOptions {
+  subscription?: string
   /**
    * Skip creating a new version (and bumping the current pointer) if the
    * incoming content hashes equal the current version's hash. The current
@@ -70,12 +80,13 @@ export const saveVersion = async (
   message: string,
   options: SaveVersionOptions = {},
 ): Promise<SaveVersionResult> => {
+  const subscription = options.subscription
   const contentHash = await hashContent(content)
 
   if (options.skipIfUnchanged) {
-    const current = await kv.get<CurrentPointer>(CURRENT_KEY, 'json')
+    const current = await kv.get<CurrentPointer>(scopedKey(CURRENT_KEY, subscription), 'json')
     if (current) {
-      const currentSnapshot = await getVersion(kv, current.versionId)
+      const currentSnapshot = await getVersion(kv, current.versionId, subscription)
       if (currentSnapshot && currentSnapshot.contentHash === contentHash) {
         return { snapshot: currentSnapshot, unchanged: true }
       }
@@ -98,12 +109,12 @@ export const saveVersion = async (
     updatedAt: createdAt,
   }
 
-  await kv.put(`${VERSION_PREFIX}${id}`, JSON.stringify(snapshot))
+  await kv.put(scopedKey(`${VERSION_PREFIX}${id}`, subscription), JSON.stringify(snapshot))
 
   try {
-    await kv.put(CURRENT_KEY, JSON.stringify(pointer))
+    await kv.put(scopedKey(CURRENT_KEY, subscription), JSON.stringify(pointer))
   } catch (error) {
-    await kv.delete(`${VERSION_PREFIX}${id}`)
+    await kv.delete(scopedKey(`${VERSION_PREFIX}${id}`, subscription))
     throw error
   }
 
@@ -113,8 +124,12 @@ export const saveVersion = async (
 export const getVersion = async (
   kv: KVNamespace,
   versionId: string,
+  subscription?: string,
 ): Promise<VersionSnapshot | null> => {
-  const snapshot = await kv.get<VersionSnapshot>(`${VERSION_PREFIX}${versionId}`, 'json')
+  const snapshot = await kv.get<VersionSnapshot>(
+    scopedKey(`${VERSION_PREFIX}${versionId}`, subscription),
+    'json',
+  )
   return snapshot ?? null
 }
 
@@ -122,6 +137,7 @@ export const listVersions = async (
   kv: KVNamespace,
   limit: number = STORAGE_CONFIG.DEFAULT_PAGE_LIMIT,
   cursor?: string,
+  subscription?: string,
 ): Promise<{ keys: VersionListItem[]; cursor?: string }> => {
   // KV.list() returns keys in lexicographic ASCENDING order with no reverse
   // option, so we cannot rely on its cursor for newest-first pagination.
@@ -131,7 +147,7 @@ export const listVersions = async (
   let kvCursor: string | undefined
   while (true) {
     const page = await kv.list({
-      prefix: VERSION_PREFIX,
+      prefix: scopedKey(VERSION_PREFIX, subscription),
       cursor: kvCursor,
     })
     for (const key of page.keys) {
@@ -151,8 +167,8 @@ export const listVersions = async (
 
   const snapshots = await Promise.all(
     pageSlice.map(async (name) => {
-      const id = name.slice(VERSION_PREFIX.length)
-      return getVersion(kv, id)
+      const id = name.slice(scopedKey(VERSION_PREFIX, subscription).length)
+      return getVersion(kv, id, subscription)
     }),
   )
 
@@ -176,13 +192,14 @@ export const listVersions = async (
 
 export const getCurrent = async (
   kv: KVNamespace,
+  subscription?: string,
 ): Promise<(CurrentPointer & { content: string }) | null> => {
-  const pointer = await kv.get<CurrentPointer>(CURRENT_KEY, 'json')
+  const pointer = await kv.get<CurrentPointer>(scopedKey(CURRENT_KEY, subscription), 'json')
   if (!pointer) {
     return null
   }
 
-  const version = await getVersion(kv, pointer.versionId)
+  const version = await getVersion(kv, pointer.versionId, subscription)
   if (!version) {
     return null
   }
@@ -193,13 +210,20 @@ export const getCurrent = async (
   }
 }
 
-export const getHeaders = async (kv: KVNamespace): Promise<HeadersConfig> => {
-  const headers = await kv.get<HeadersConfig>(HEADERS_KEY, 'json')
+export const getHeaders = async (
+  kv: KVNamespace,
+  subscription?: string,
+): Promise<HeadersConfig> => {
+  const headers = await kv.get<HeadersConfig>(scopedKey(HEADERS_KEY, subscription), 'json')
   return headers ?? {}
 }
 
-export const setHeaders = async (kv: KVNamespace, headers: HeadersConfig): Promise<void> => {
-  await kv.put(HEADERS_KEY, JSON.stringify(headers))
+export const setHeaders = async (
+  kv: KVNamespace,
+  headers: HeadersConfig,
+  subscription?: string,
+): Promise<void> => {
+  await kv.put(scopedKey(HEADERS_KEY, subscription), JSON.stringify(headers))
 }
 
 export type DeleteVersionResult = { ok: true } | { ok: false; reason: 'not_found' | 'is_current' }
@@ -207,15 +231,16 @@ export type DeleteVersionResult = { ok: true } | { ok: false; reason: 'not_found
 export const deleteVersion = async (
   kv: KVNamespace,
   versionId: string,
+  subscription?: string,
 ): Promise<DeleteVersionResult> => {
-  const key = `${VERSION_PREFIX}${versionId}`
+  const key = scopedKey(`${VERSION_PREFIX}${versionId}`, subscription)
 
   const snapshot = await kv.get<VersionSnapshot>(key, 'json')
   if (!snapshot) {
     return { ok: false, reason: 'not_found' }
   }
 
-  const pointer = await kv.get<CurrentPointer>(CURRENT_KEY, 'json')
+  const pointer = await kv.get<CurrentPointer>(scopedKey(CURRENT_KEY, subscription), 'json')
   if (pointer && pointer.versionId === versionId) {
     return { ok: false, reason: 'is_current' }
   }
@@ -228,12 +253,58 @@ export const updateVersionMessage = async (
   kv: KVNamespace,
   versionId: string,
   message: string,
+  subscription?: string,
 ): Promise<VersionSnapshot | null> => {
-  const key = `${VERSION_PREFIX}${versionId}`
+  const key = scopedKey(`${VERSION_PREFIX}${versionId}`, subscription)
   const snapshot = await kv.get<VersionSnapshot>(key, 'json')
   if (!snapshot) return null
 
   snapshot.message = message
   await kv.put(key, JSON.stringify(snapshot))
   return snapshot
+}
+
+export const isSubscriptionName = (name: string): boolean =>
+  /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/.test(name)
+
+export const getSubscription = async (
+  kv: KVNamespace,
+  name: string,
+): Promise<Subscription | null> => {
+  if (!isSubscriptionName(name)) return null
+  return kv.get<Subscription>(`${STORAGE_CONFIG.SUBSCRIPTION_META_PREFIX}${name}`, 'json')
+}
+
+export const listSubscriptions = async (kv: KVNamespace): Promise<Subscription[]> => {
+  const subscriptions: Subscription[] = []
+  let cursor: string | undefined
+  do {
+    const page = await kv.list<Subscription>({
+      prefix: STORAGE_CONFIG.SUBSCRIPTION_META_PREFIX,
+      cursor,
+    })
+    for (const key of page.keys) {
+      if (key.metadata) subscriptions.push(key.metadata)
+    }
+    if (page.list_complete) break
+    cursor = page.cursor
+  } while (cursor)
+  return subscriptions.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export const createSubscription = async (
+  kv: KVNamespace,
+  name: string,
+): Promise<Subscription | null> => {
+  if (!isSubscriptionName(name)) throw new Error('Invalid subscription name')
+  if (await getSubscription(kv, name)) return null
+  const subscription: Subscription = { name, createdAt: new Date().toISOString() }
+  // Publish metadata only after the initial configuration is ready.
+  await saveVersion(kv, 'proxies: []\nproxy-groups: []\nrules: []\n', 'Create subscription', {
+    subscription: name,
+  })
+  await kv.put(`${STORAGE_CONFIG.SUBSCRIPTION_META_PREFIX}${name}`, JSON.stringify(subscription), {
+    metadata: subscription,
+  })
+  return subscription
 }

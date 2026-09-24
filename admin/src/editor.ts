@@ -30,8 +30,8 @@ import { createYamlSearchPanel } from './searchPanel'
 import { clashCompletionSource } from './clashSchema'
 import type { Page } from './page'
 
-const DRAFT_KEY = 'clash_admin_draft'
-const DRAFT_META_KEY = 'clash_admin_draft_meta'
+const DEFAULT_DRAFT_KEY = 'clash_admin_draft'
+const DEFAULT_DRAFT_META_KEY = 'clash_admin_draft_meta'
 const COLLAPSED_BANNER_THRESHOLD = 5
 const SAVED_INDICATOR_MS = 1500
 
@@ -49,36 +49,44 @@ const hashStr = (s: string): string => {
   return (h >>> 0).toString(16)
 }
 
-const readDraftMeta = (): DraftMeta | null => {
-  try {
-    const raw = localStorage.getItem(DRAFT_META_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<DraftMeta>
-    if (typeof parsed.savedAt !== 'number' || typeof parsed.forOriginalHash !== 'string')
-      return null
-    return parsed as DraftMeta
-  } catch {
-    return null
-  }
-}
-
-const writeDraftMeta = (meta: DraftMeta): void => {
-  localStorage.setItem(DRAFT_META_KEY, JSON.stringify(meta))
-}
-
-const clearDraft = (): void => {
-  localStorage.removeItem(DRAFT_KEY)
-  localStorage.removeItem(DRAFT_META_KEY)
-}
-
 export function createEditorPage(onSaved?: () => void): Page {
   let activeView: EditorView | null = null
   let autosaveTimer: number | undefined
   let savedFlashTimer: number | undefined
   let editorDirty = false
+  let mounted = false
 
   return {
     mount(container: HTMLElement, api: ApiClient): void {
+      mounted = true
+      const DRAFT_KEY = api.subscription
+        ? `${DEFAULT_DRAFT_KEY}:${api.subscription}`
+        : DEFAULT_DRAFT_KEY
+      const DRAFT_META_KEY = api.subscription
+        ? `${DEFAULT_DRAFT_META_KEY}:${api.subscription}`
+        : DEFAULT_DRAFT_META_KEY
+      const readDraftMeta = (): DraftMeta | null => {
+        try {
+          const raw = localStorage.getItem(DRAFT_META_KEY)
+          if (!raw) return null
+          const parsed = JSON.parse(raw) as Partial<DraftMeta>
+          if (typeof parsed.savedAt !== 'number' || typeof parsed.forOriginalHash !== 'string')
+            return null
+          return parsed as DraftMeta
+        } catch {
+          return null
+        }
+      }
+
+      const writeDraftMeta = (meta: DraftMeta): void => {
+        localStorage.setItem(DRAFT_META_KEY, JSON.stringify(meta))
+      }
+
+      const clearDraft = (): void => {
+        localStorage.removeItem(DRAFT_KEY)
+        localStorage.removeItem(DRAFT_META_KEY)
+      }
+
       container.innerHTML = `
     <div class="editor-page">
       <div class="editor-toolbar">
@@ -266,13 +274,14 @@ export function createEditorPage(onSaved?: () => void): Page {
           confirmLabel: t.editor.saveDialogConfirm,
           cancelLabel: t.modal.cancel,
         })
-        if (!dialogResult) return
+        if (!dialogResult || !mounted) return
 
         const versionMsg = dialogResult.message.length > 0 ? dialogResult.message : undefined
 
         setSaveState('loading')
         try {
           const result = await api.saveConfig(doc, versionMsg)
+          if (!mounted) return
           clearDraft()
           originalContent = doc
           editorDirty = false
@@ -283,6 +292,7 @@ export function createEditorPage(onSaved?: () => void): Page {
           )
           if (onSaved) onSaved()
         } catch (e: unknown) {
+          if (!mounted) return
           setSaveState('default')
           showToast(e instanceof Error ? e.message : String(e), 'error')
         }
@@ -461,6 +471,7 @@ export function createEditorPage(onSaved?: () => void): Page {
       const loadConfig = async () => {
         try {
           const config = await api.getConfig()
+          if (!mounted) return
           originalContent = config.content
           initEditor(originalContent)
 
@@ -474,6 +485,7 @@ export function createEditorPage(onSaved?: () => void): Page {
             clearDraft()
           }
         } catch (e: unknown) {
+          if (!mounted) return
           showToast(e instanceof Error ? e.message : String(e), 'error')
           if (!(e instanceof AuthError)) initEditor('')
         }
@@ -493,7 +505,7 @@ export function createEditorPage(onSaved?: () => void): Page {
       })
 
       downloadBtn.addEventListener('click', () => {
-        window.open('/download', '_blank')
+        window.open(api.downloadPath, '_blank', 'noopener')
       })
 
       if (autosaveTimer !== undefined) {
@@ -515,6 +527,7 @@ export function createEditorPage(onSaved?: () => void): Page {
       }, 30000)
     },
     unmount(): void {
+      mounted = false
       if (autosaveTimer !== undefined) {
         window.clearInterval(autosaveTimer)
         autosaveTimer = undefined

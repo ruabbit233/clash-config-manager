@@ -1,5 +1,5 @@
 import { AuthError, handleAuthError } from './auth'
-import type { HeadersConfig, VersionListItem, VersionSnapshot } from '@shared/types'
+import type { HeadersConfig, Subscription, VersionListItem, VersionSnapshot } from '@shared/types'
 
 export class ApiError extends Error {
   readonly status: number
@@ -39,9 +39,38 @@ export class ApiClient {
   private baseUrl: string
   private getToken: () => string | null
 
-  constructor(baseUrl: string, getToken: () => string | null) {
+  constructor(
+    baseUrl: string,
+    getToken: () => string | null,
+    readonly subscription = '',
+  ) {
     this.baseUrl = baseUrl
     this.getToken = getToken
+  }
+
+  get publicPath(): string {
+    return this.subscription ? `/bus/${encodeURIComponent(this.subscription)}` : '/'
+  }
+
+  get downloadPath(): string {
+    return this.subscription ? `${this.publicPath}/download` : '/download'
+  }
+
+  private get configBase(): string {
+    return this.subscription
+      ? `/api/subscriptions/${encodeURIComponent(this.subscription)}`
+      : '/api'
+  }
+
+  async listSubscriptions(): Promise<Subscription[]> {
+    return this.fetch<Subscription[]>('/api/subscriptions')
+  }
+
+  async createSubscription(name: string): Promise<Subscription> {
+    return this.fetch<Subscription>('/api/subscriptions', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    })
   }
 
   private async fetch<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -101,11 +130,11 @@ export class ApiClient {
   }
 
   async getConfig(): Promise<ConfigResponse> {
-    return this.fetch<ConfigResponse>('/api/config')
+    return this.fetch<ConfigResponse>(`${this.configBase}/config`)
   }
 
   async saveConfig(content: string, message?: string): Promise<SaveConfigResponse> {
-    return this.fetch<SaveConfigResponse>('/api/config', {
+    return this.fetch<SaveConfigResponse>(`${this.configBase}/config`, {
       method: 'PUT',
       body: JSON.stringify({ content, message }),
     })
@@ -119,37 +148,37 @@ export class ApiClient {
     if (limit) params.set('limit', limit.toString())
     if (cursor) params.set('cursor', cursor)
     return this.fetch<{ keys: VersionListItem[]; cursor?: string }>(
-      `/api/versions?${params.toString()}`,
+      `${this.configBase}/versions?${params.toString()}`,
     )
   }
 
   async getVersion(id: string): Promise<VersionSnapshot> {
-    return this.fetch<VersionSnapshot>(`/api/versions/${id}`)
+    return this.fetch<VersionSnapshot>(`${this.configBase}/versions/${id}`)
   }
 
   async rollbackVersion(id: string): Promise<SaveConfigResponse> {
-    return this.fetch<SaveConfigResponse>(`/api/versions/${id}/rollback`, {
+    return this.fetch<SaveConfigResponse>(`${this.configBase}/versions/${id}/rollback`, {
       method: 'POST',
     })
   }
 
   async updateVersionMessage(id: string, message: string): Promise<UpdateVersionResponse> {
-    return this.fetch<UpdateVersionResponse>(`/api/versions/${id}`, {
+    return this.fetch<UpdateVersionResponse>(`${this.configBase}/versions/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ message }),
     })
   }
 
   async deleteVersion(id: string): Promise<void> {
-    await this.fetch<void>(`/api/versions/${id}`, { method: 'DELETE' })
+    await this.fetch<void>(`${this.configBase}/versions/${id}`, { method: 'DELETE' })
   }
 
   async getHeaders(): Promise<HeadersConfig> {
-    return this.fetch<HeadersConfig>('/api/headers')
+    return this.fetch<HeadersConfig>(`${this.configBase}/headers`)
   }
 
   async setHeaders(headers: HeadersConfig): Promise<void> {
-    return this.fetch<void>('/api/headers', {
+    return this.fetch<void>(`${this.configBase}/headers`, {
       method: 'PUT',
       body: JSON.stringify(headers),
     })

@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { subscriptionScope } from '../utils/subscription'
 import { safeParseJson } from '../utils/response'
 import { getHeaders, setHeaders } from '../storage'
 import { HEADER_CONFIG } from '../types'
@@ -7,7 +8,7 @@ import type { Env } from '../types'
 export const headerRoutes = new Hono<{ Bindings: Env }>()
 
 headerRoutes.get('/', async (c) => {
-  const headers = await getHeaders(c.env.KV)
+  const headers = await getHeaders(c.env.KV, subscriptionScope(c))
   return c.json(headers)
 })
 
@@ -40,7 +41,7 @@ headerRoutes.put('/', async (c) => {
 
   Object.assign(nextHeaders, body as Record<string, string>)
 
-  await setHeaders(c.env.KV, nextHeaders)
+  await setHeaders(c.env.KV, nextHeaders, subscriptionScope(c))
 
   return c.json(nextHeaders)
 })

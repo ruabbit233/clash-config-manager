@@ -16,6 +16,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': 'http://localhost:8787',
+      '/bus': 'http://localhost:8787',
       '/download': 'http://localhost:8787',
     },
   },

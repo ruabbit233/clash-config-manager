@@ -12,6 +12,17 @@ const locale = {
     versions: '版本历史',
     headers: '响应头',
   },
+  subscriptions: {
+    label: '当前订阅',
+    defaultName: '默认订阅',
+    add: '新增订阅',
+    namePrompt: '订阅名称（1–64 位英文字母、数字、下划线或连字符，以字母或数字开头，区分大小写）',
+    invalidName: '订阅名称格式不正确',
+    created: '订阅已创建，请编辑并保存配置',
+    exists: '该订阅名称已存在',
+    copy: '复制订阅地址',
+    copied: '订阅地址已复制',
+  },
   login: {
     title: '登录',
     subtitle: 'Clash Config Manager',

@@ -6,6 +6,7 @@ import { authRoutes } from './routes/auth'
 import { configRoutes } from './routes/config'
 import { versionRoutes } from './routes/versions'
 import { headerRoutes } from './routes/headers'
+import { subscriptionRoutes } from './routes/subscriptions'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -25,6 +26,7 @@ app.route('/api/auth', authRoutes)
 app.route('/api/config', configRoutes)
 app.route('/api/versions', versionRoutes)
 app.route('/api/headers', headerRoutes)
+app.route('/api/subscriptions', subscriptionRoutes)
 
 app.all('*', async (c) => {
   return c.env.ASSETS.fetch(c.req.raw)

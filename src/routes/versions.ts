@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { subscriptionScope } from '../utils/subscription'
 import { safeParseJson } from '../utils/response'
 import {
   deleteVersion,
@@ -20,13 +21,13 @@ versionRoutes.get('/', async (c) => {
     ? STORAGE_CONFIG.DEFAULT_PAGE_LIMIT
     : Math.min(Math.max(parsed, 1), STORAGE_CONFIG.MAX_PAGE_LIMIT)
 
-  const versions = await listVersions(c.env.KV, limit, cursor)
+  const versions = await listVersions(c.env.KV, limit, cursor, subscriptionScope(c))
   return c.json(versions)
 })
 
 versionRoutes.get('/:id', async (c) => {
   const id = c.req.param('id')
-  const version = await getVersion(c.env.KV, id)
+  const version = await getVersion(c.env.KV, id, subscriptionScope(c))
   if (!version) {
     return c.json({ error: 'Version not found' }, 404)
   }
@@ -36,7 +37,7 @@ versionRoutes.get('/:id', async (c) => {
 
 versionRoutes.post('/:id/rollback', async (c) => {
   const id = c.req.param('id')
-  const version = await getVersion(c.env.KV, id)
+  const version = await getVersion(c.env.KV, id, subscriptionScope(c))
   if (!version) {
     return c.json({ error: 'Version not found' }, 404)
   }
@@ -45,6 +46,7 @@ versionRoutes.post('/:id/rollback', async (c) => {
     c.env.KV,
     version.content,
     `Rollback to version ${id.slice(0, 8)}`,
+    { subscription: subscriptionScope(c) },
   )
 
   return c.json({
@@ -61,7 +63,7 @@ versionRoutes.patch('/:id', async (c) => {
     return c.json({ error: 'Invalid request body: message is required' }, 400)
   }
 
-  const updated = await updateVersionMessage(c.env.KV, id, body.message)
+  const updated = await updateVersionMessage(c.env.KV, id, body.message, subscriptionScope(c))
   if (!updated) {
     return c.json({ error: 'Version not found' }, 404)
   }
@@ -76,7 +78,7 @@ versionRoutes.patch('/:id', async (c) => {
 
 versionRoutes.delete('/:id', async (c) => {
   const id = c.req.param('id')
-  const result = await deleteVersion(c.env.KV, id)
+  const result = await deleteVersion(c.env.KV, id, subscriptionScope(c))
   if (result.ok) {
     return c.body(null, 204)
   }

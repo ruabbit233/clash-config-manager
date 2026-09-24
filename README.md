@@ -12,6 +12,8 @@ A Cloudflare Workers-based Clash YAML configuration manager with a web admin pan
 Single Cloudflare Worker
 ├── GET /              → YAML config (public, custom headers from KV)
 ├── GET /download      → YAML config as file download
+├── GET /bus/:name     → Named subscription YAML config
+├── GET /bus/:name/download → Named subscription file download
 ├── POST /api/auth/*   → Authentication (no token required)
 ├── /api/*             → Protected API (JWT Bearer token required)
 ├── GET /admin*        → Static assets (admin SPA)
@@ -114,6 +116,30 @@ Or configure via Cloudflare Dashboard → Workers → your worker → Settings �
 
 Auth: `Authorization: Bearer <token>` header. Returns 401 if invalid or expired.
 
+## Multiple subscriptions
+
+In the admin sidebar, click **新增订阅**, enter a name such as `abcdefgh`, then edit and save its YAML. Use the subscription selector to switch between configurations. **复制订阅地址** copies the selected subscription URL; the editor's download button downloads that subscription.
+
+- `/bus/abcdefgh` serves its current YAML without admin authentication or a User-Agent restriction.
+- `/bus/abcdefgh/download` downloads the same YAML as `abcdefgh.yaml`.
+- The default subscription retains `/` (Clash User-Agent required) and `/download`, with its existing data unchanged. No migration is required.
+- Configurations, version history, rollbacks, custom response headers, and browser drafts are isolated per subscription. New subscriptions start with empty `proxies`, `proxy-groups`, and `rules` lists.
+- Names are case-sensitive, 1–64 ASCII letters, digits, underscores or hyphens, starting with a letter or digit. Existing names return `409`; unknown subscriptions return `404`.
+
+Admin APIs (all require authentication):
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/subscriptions` | List named subscriptions (`[{ name, createdAt }]`); the default subscription is implicit |
+| POST | `/api/subscriptions` | Create a subscription with `{ "name": "abcdefgh" }` |
+| GET / PUT | `/api/subscriptions/:name/config` | Read / save YAML |
+| GET | `/api/subscriptions/:name/versions` | List versions with `limit` / `cursor` |
+| GET / PATCH / DELETE | `/api/subscriptions/:name/versions/:id` | Read / annotate / delete a version |
+| POST | `/api/subscriptions/:name/versions/:id/rollback` | Roll back within this subscription |
+| GET / PUT | `/api/subscriptions/:name/headers` | Read / save this subscription's response headers |
+
+The scoped config, version, and header APIs use the same request/response formats as the default APIs above. Data uses Cloudflare KV and shares its eventual-consistency behavior; changes may take time to propagate across regions.
+
 ## Project Structure
 
 ```
@@ -179,6 +205,10 @@ clash-config-manager/
 | `config:current` | `{ versionId, updatedAt }` | Pointer to latest version |
 | `version:<ulid>` | `{ id, content, message, createdAt, contentHash }` | Version snapshot |
 | `headers:config` | `{ "Header-Name": "value" }` | Custom response headers |
+| `subscription-meta:<name>` | `{ name, createdAt }` | Subscription registry; also stored as KV metadata for listing |
+| `subscription:<name>:config:current` | `{ versionId, updatedAt }` | Named subscription current pointer |
+| `subscription:<name>:version:<ulid>` | Version snapshot | Named subscription version history |
+| `subscription:<name>:headers:config` | `{ "Header-Name": "value" }` | Named subscription custom response headers |
 
 ## Features
 
